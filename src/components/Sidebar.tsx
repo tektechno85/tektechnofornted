@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -6,6 +5,7 @@ import {
   // Newspaper,
   // CreditCard,
   RefreshCcw,
+  Users2,
   // ShieldCheck,
   // Store,
   // Settings,
@@ -19,16 +19,15 @@ import {
 import { cn } from "@/lib/utils";
 
 const navigationItems = [
-  { 
+  {
     section: "MAIN",
-    items: [
-      { name: "Dashboard", icon: LayoutDashboard, href: "/dashboard" }
-    ]
+    items: [{ name: "Dashboard", icon: LayoutDashboard, href: "/dashboard" }],
   },
   {
     section: "PAYMENTS",
     items: [
       { name: "Payouts", icon: RefreshCcw, href: "/payouts" },
+      { name: "Beneficiaries", icon: Users2, href: "/beneficiaries" },
       // { name: "Payment Links", icon: LinkIcon, href: "/payment-links" },
       // { name: "Smart Pages", icon: Newspaper, href: "/smart-pages" },
       // { name: "Payments", icon: CreditCard, href: "/payments" },
@@ -38,7 +37,7 @@ const navigationItems = [
       // { name: "Shipping", icon: Globe, href: "/shipping" },
       // { name: "API & Plugins", icon: Settings, href: "/api-plugins" },
       // { name: "Reseller", icon: Users, href: "/reseller" },
-    ]
+    ],
   },
   // {
   //   section: "ONLINE STORE",
@@ -99,4 +98,4 @@ const Sidebar = () => {
   );
 };
 
-export default Sidebar; 
+export default Sidebar;

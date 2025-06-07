@@ -1,10 +1,11 @@
 export interface User {
-  id: string;
-  name: string;
+  fullName: string;
   email: string;
-  avatar: string;
-  role: string;
-  joinedDate: string;
+  mobileNumber: string;
+  userType: string;
+  status: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AuthContextType {

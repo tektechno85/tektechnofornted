@@ -54,7 +54,7 @@ interface RegisterResponse {
   };
 }
 
-export const login = createAsyncThunk(
+export const login: any = createAsyncThunk(
   "auth/login",
   async (credentials: LoginCredentials, { rejectWithValue }) => {
     try {

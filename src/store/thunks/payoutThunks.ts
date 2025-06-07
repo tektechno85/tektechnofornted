@@ -1,5 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { getApiUrl } from "../../config/api";
+import { getAPI, postAPI } from "@/config/ApiService";
 
 interface BeneficiaryAddress {
   line: string;
@@ -8,6 +9,25 @@ interface BeneficiaryAddress {
   district: string;
   state: string;
   pincode: string;
+}
+
+export interface Beneficiary {
+  beneficiaryId: string;
+  beneType: string;
+  beneficiaryBankAccountNumber: string;
+  beneficiaryBankIfscCode: string;
+  beneficiaryName: string;
+  beneficiaryBankName: string;
+  beneficiaryEmail: string;
+  beneficiaryMobileNumber: string;
+  beneficiaryPan: string;
+  beneficiaryAadhaar: string;
+  beneficiaryAddress: string;
+  latitude: number;
+  longitude: number;
+  status: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface AddBeneficiaryData {
@@ -27,8 +47,20 @@ interface AddBeneficiaryData {
 }
 
 interface UpdateBeneficiaryParams {
-  beneficiaryIfscCode: string;
   beneficiaryId: string;
+  beneficiaryName: string;
+  beneficiaryMobileNumber: string;
+  beneficiaryEmail: string;
+  beneficiaryPanNumber: string;
+  beneficiaryAadhaarNumber: string;
+  beneficiaryAddress: string;
+  beneficiaryBankName: string;
+  beneficiaryAccountNumber: string;
+  beneficiaryIfscCode: string;
+  beneType: string;
+  latitude: number;
+  longitude: number;
+  address: BeneficiaryAddress;
 }
 
 interface SendMoneyData {
@@ -56,23 +88,22 @@ export const fetchBeneficiaryTypes = createAsyncThunk(
   "payout/fetchBeneficiaryTypes",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch(getApiUrl("/payout/beneficiary-type"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({}), // Empty body as per the curl command
-      });
+      const res = await getAPI<{
+        response: boolean;
+        message: string;
+        data: {
+          ID: number;
+          PAY_TYPE: string;
+        }[];
+        status: string;
+        timestamp: string;
+      }>("/payout/beneficiary-type");
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(
-          errorData?.message || "Failed to fetch beneficiary types"
-        );
+      if (!res.response) {
+        throw new Error(res.message || "Failed to fetch beneficiary types");
       }
 
-      const data = await response.json();
-      return data;
+      return res.data;
     } catch (error) {
       return rejectWithValue((error as Error).message);
     }
@@ -108,21 +139,19 @@ export const addBeneficiary = createAsyncThunk(
   "payout/addBeneficiary",
   async (beneficiaryData: AddBeneficiaryData, { rejectWithValue }) => {
     try {
-      const response = await fetch(getApiUrl("/payout/add/beneficiary"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(beneficiaryData),
-      });
+      const res = await postAPI<{
+        response: boolean;
+        message: string;
+        data: Beneficiary;
+        status: string;
+        timestamp: string;
+      }>("/payout/add/beneficiary", beneficiaryData);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || "Failed to add beneficiary");
+      if (!res.response) {
+        throw new Error(res.message || "Failed to add beneficiary");
       }
 
-      const data = await response.json();
-      return data;
+      return res.data;
     } catch (error) {
       return rejectWithValue((error as Error).message);
     }
@@ -164,25 +193,23 @@ export const updateBeneficiary = createAsyncThunk(
   "payout/updateBeneficiary",
   async (params: UpdateBeneficiaryParams, { rejectWithValue }) => {
     try {
-      const response = await fetch(
-        getApiUrl(
-          `/payout/update/beneficiary?beneficiaryIfscCode=${params.beneficiaryIfscCode}&beneficiaryId=${params.beneficiaryId}`
-        ),
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      console.log({ params });
+      // beneficiaryIfscCode=IOBA0000567
+      // beneficiaryId=CY_L4JGlyWrBJ6
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || "Failed to update beneficiary");
+      const res = await postAPI<{
+        response: boolean;
+        message: string;
+        data: Beneficiary;
+        status: string;
+        timestamp: string;
+      }>("/payout/update/beneficiary", params);
+
+      if (!res.response) {
+        throw new Error(res.message || "Failed to update beneficiary");
       }
 
-      const data = await response.json();
-      return data;
+      return res.data;
     } catch (error) {
       return rejectWithValue((error as Error).message);
     }
@@ -276,27 +303,21 @@ export const fetchBeneficiaryList = createAsyncThunk(
   "payout/fetchBeneficiaryList",
   async (params: PaginationParams, { rejectWithValue }) => {
     try {
-      const response = await fetch(
-        getApiUrl(
-          `/payout/beneficiary-list?pageNumber=${params.pageNumber}&pageSize=${params.pageSize}`
-        ),
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+      const res = await getAPI<{
+        response: boolean;
+        message: string;
+        data: Beneficiary[];
+        status: string;
+        timestamp: string;
+      }>(
+        `/payout/beneficiary-list?pageNumber=${params.pageNumber}&pageSize=${params.pageSize}`
       );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(
-          errorData?.message || "Failed to fetch beneficiary list"
-        );
+      if (!res.response) {
+        throw new Error(res.message || "Failed to fetch beneficiary list");
       }
 
-      const data = await response.json();
-      return data;
+      return res.data;
     } catch (error) {
       return rejectWithValue((error as Error).message);
     }

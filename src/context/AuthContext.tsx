@@ -1,12 +1,15 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { authService } from '@/lib/auth';
-import { AuthContextType, AuthProviderProps, User } from '@/lib/types';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
+import { authService } from "@/lib/auth";
+import { AuthContextType, AuthProviderProps, User } from "@/lib/types";
+import { AppDispatch } from "@/store/store";
 
 // Create the auth context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Auth provider component
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const dispatch = useDispatch<AppDispatch>();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +35,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       setError(null);
-      const user = await authService.login(email, password);
+      const user = await authService.login(email, password, dispatch);
       setUser(user);
       // Store user in localStorage for session persistence
       localStorage.setItem("auth_user", JSON.stringify(user));
@@ -57,7 +60,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     login,
     logout,
-    error
+    error,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
