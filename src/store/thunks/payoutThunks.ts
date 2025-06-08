@@ -48,19 +48,7 @@ interface AddBeneficiaryData {
 
 interface UpdateBeneficiaryParams {
   beneficiaryId: string;
-  beneficiaryName: string;
-  beneficiaryMobileNumber: string;
-  beneficiaryEmail: string;
-  beneficiaryPanNumber: string;
-  beneficiaryAadhaarNumber: string;
-  beneficiaryAddress: string;
-  beneficiaryBankName: string;
-  beneficiaryAccountNumber: string;
   beneficiaryIfscCode: string;
-  beneType: string;
-  latitude: number;
-  longitude: number;
-  address: BeneficiaryAddress;
 }
 
 interface SendMoneyData {
@@ -82,6 +70,32 @@ interface TransactionDetailsParams {
 interface PaginationParams {
   pageNumber: number;
   pageSize: number;
+}
+
+interface PayoutTransaction {
+  id: string;
+  orderId: string;
+  beneficiaryId: string;
+  beneficiaryName: string;
+  beneficiaryMobileNumber: string;
+  amount: number;
+  transferType: string;
+  status: string;
+  comment: string;
+  remarks: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface PayoutTransactionResponse {
+  content: PayoutTransaction[];
+  totalElements: number;
+  totalPages: number;
+  pageNumber: number;
+  pageSize: number;
+  last: boolean;
+  first: boolean;
+  empty: boolean;
 }
 
 export const fetchBeneficiaryTypes = createAsyncThunk(
@@ -203,7 +217,14 @@ export const updateBeneficiary = createAsyncThunk(
         data: Beneficiary;
         status: string;
         timestamp: string;
-      }>("/payout/update/beneficiary", params);
+      }>(
+        "/payout/update/beneficiary",
+        {},
+        {
+          beneficiaryIfscCode: params.beneficiaryIfscCode,
+          beneficiaryId: params.beneficiaryId,
+        }
+      );
 
       if (!res.response) {
         throw new Error(res.message || "Failed to update beneficiary");
@@ -220,21 +241,19 @@ export const sendMoney = createAsyncThunk(
   "payout/sendMoney",
   async (paymentData: SendMoneyData, { rejectWithValue }) => {
     try {
-      const response = await fetch(getApiUrl("/payout/send-money"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(paymentData),
-      });
+      const res = await postAPI<{
+        response: boolean;
+        message: string;
+        data: any;
+        status: string;
+        timestamp: string;
+      }>("/payout/send-money", paymentData);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || "Failed to send money");
+      if (!res.response) {
+        throw new Error(res.message || "Failed to send money");
       }
 
-      const data = await response.json();
-      return data;
+      return res.data;
     } catch (error) {
       return rejectWithValue((error as Error).message);
     }
@@ -305,6 +324,31 @@ export const fetchBeneficiaryList = createAsyncThunk(
 
       if (!res.response) {
         throw new Error(res.message || "Failed to fetch beneficiary list");
+      }
+
+      return res.data;
+    } catch (error) {
+      return rejectWithValue((error as Error).message);
+    }
+  }
+);
+
+export const fetchAllPayoutTransactions = createAsyncThunk(
+  "payout/fetchAllPayoutTransactions",
+  async (params: PaginationParams, { rejectWithValue }) => {
+    try {
+      const res = await getAPI<{
+        response: boolean;
+        message: string;
+        data: PayoutTransactionResponse;
+        status: string;
+        timestamp: string;
+      }>(
+        `/payout/all-payout-transaction?pageNumber=${params.pageNumber}&pageSize=${params.pageSize}`
+      );
+
+      if (!res.response) {
+        throw new Error(res.message || "Failed to fetch payout transactions");
       }
 
       return res.data;

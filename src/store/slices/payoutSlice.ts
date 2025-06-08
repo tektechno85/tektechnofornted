@@ -9,6 +9,7 @@ import {
   checkPayoutStatus,
   fetchTransactionDetails,
   fetchBeneficiaryList,
+  fetchAllPayoutTransactions,
 } from "../thunks/payoutThunks";
 
 interface PayoutState {
@@ -32,6 +33,16 @@ interface PayoutState {
     totalPages: number;
     pageNumber: number;
     pageSize: number;
+  };
+  allPayoutTransactions: {
+    content: any[] | null;
+    totalElements: number;
+    totalPages: number;
+    pageNumber: number;
+    pageSize: number;
+    last: boolean;
+    first: boolean;
+    empty: boolean;
   };
   loading: boolean;
   error: string | null;
@@ -58,6 +69,16 @@ const initialState: PayoutState = {
     totalPages: 0,
     pageNumber: 0,
     pageSize: 10,
+  },
+  allPayoutTransactions: {
+    content: null,
+    totalElements: 0,
+    totalPages: 0,
+    pageNumber: 0,
+    pageSize: 10,
+    last: false,
+    first: true,
+    empty: true,
   },
   loading: false,
   error: null,
@@ -107,6 +128,18 @@ const payoutSlice = createSlice({
         totalPages: 0,
         pageNumber: 0,
         pageSize: 10,
+      };
+    },
+    clearAllPayoutTransactions: (state) => {
+      state.allPayoutTransactions = {
+        content: null,
+        totalElements: 0,
+        totalPages: 0,
+        pageNumber: 0,
+        pageSize: 10,
+        last: false,
+        first: true,
+        empty: true,
       };
     },
   },
@@ -268,6 +301,31 @@ const payoutSlice = createSlice({
       .addCase(fetchBeneficiaryList.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      // Fetch All Payout Transactions
+      .addCase(fetchAllPayoutTransactions.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        fetchAllPayoutTransactions.fulfilled,
+        (state, action: PayloadAction<any>) => {
+          state.loading = false;
+          state.allPayoutTransactions = {
+            content: action.payload.content || null,
+            totalElements: action.payload.totalElements || 0,
+            totalPages: action.payload.totalPages || 0,
+            pageNumber: action.payload.pageNumber || 0,
+            pageSize: action.payload.pageSize || 10,
+            last: action.payload.last || false,
+            first: action.payload.first || true,
+            empty: action.payload.empty || true,
+          };
+        }
+      )
+      .addCase(fetchAllPayoutTransactions.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });
@@ -283,5 +341,6 @@ export const {
   clearPayoutStatus,
   clearTransactionDetails,
   clearBeneficiaryList,
+  clearAllPayoutTransactions,
 } = payoutSlice.actions;
 export default payoutSlice.reducer;

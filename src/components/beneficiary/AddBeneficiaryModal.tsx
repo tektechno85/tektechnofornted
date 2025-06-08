@@ -115,36 +115,38 @@ const AddBeneficiaryModal = ({
   const validateForm = () => {
     const newErrors: Partial<BeneficiaryFormData> = {};
 
-    // PAN validation
-    const panRegex = /[A-Z]{5}[0-9]{4}[A-Z]{1}/;
-    if (!panRegex.test(formData.beneficiaryPanNumber)) {
-      newErrors.beneficiaryPanNumber =
-        "Invalid PAN format. Should be like ABCDE1234F";
-    }
-
-    // IFSC validation
-    const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
-    if (!ifscRegex.test(formData.beneficiaryIfscCode)) {
-      newErrors.beneficiaryIfscCode = "Invalid IFSC code format";
-    }
-
-    // Mobile validation
-    const mobileRegex = /^[0-9]{10}$/;
-    if (!mobileRegex.test(formData.beneficiaryMobileNumber)) {
-      newErrors.beneficiaryMobileNumber = "Mobile number should be 10 digits";
-    }
-
-    // Email validation if provided
-    if (formData.beneficiaryEmail) {
-      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-      if (!emailRegex.test(formData.beneficiaryEmail)) {
-        newErrors.beneficiaryEmail = "Invalid email format";
+    if (beneficiary) {
+      // Only validate IFSC code when updating
+      const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+      if (!ifscRegex.test(formData.beneficiaryIfscCode)) {
+        newErrors.beneficiaryIfscCode = "Invalid IFSC code format";
       }
-    }
+    } else {
+      // PAN validation
+      const panRegex = /[A-Z]{5}[0-9]{4}[A-Z]{1}/;
+      if (!panRegex.test(formData.beneficiaryPanNumber)) {
+        newErrors.beneficiaryPanNumber =
+          "Invalid PAN format. Should be like ABCDE1234F";
+      }
 
-    // Aadhaar validation
-    if (formData.beneficiaryAadhaarNumber.length !== 12) {
-      newErrors.beneficiaryAadhaarNumber = "Aadhaar number must be 12 digits";
+      // Mobile validation
+      const mobileRegex = /^[0-9]{10}$/;
+      if (!mobileRegex.test(formData.beneficiaryMobileNumber)) {
+        newErrors.beneficiaryMobileNumber = "Mobile number should be 10 digits";
+      }
+
+      // Email validation if provided
+      if (formData.beneficiaryEmail) {
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(formData.beneficiaryEmail)) {
+          newErrors.beneficiaryEmail = "Invalid email format";
+        }
+      }
+
+      // Aadhaar validation
+      if (formData.beneficiaryAadhaarNumber.length !== 12) {
+        newErrors.beneficiaryAadhaarNumber = "Aadhaar number must be 12 digits";
+      }
     }
 
     setErrors(newErrors);
@@ -161,42 +163,35 @@ const AddBeneficiaryModal = ({
 
     setIsSubmitting(true);
     try {
-      let res;
       if (beneficiary?.id) {
-        // Update existing beneficiary
-        res = await dispatch(
+        // Update only IFSC code
+        const res = await dispatch(
           updateBeneficiary({
             beneficiaryId: beneficiary.id.toString(),
-            beneficiaryName: formData.beneficiaryName,
-            beneficiaryMobileNumber: formData.beneficiaryMobileNumber,
-            beneficiaryEmail: formData.beneficiaryEmail,
-            beneficiaryPanNumber: formData.beneficiaryPanNumber,
-            beneficiaryAadhaarNumber: formData.beneficiaryAadhaarNumber,
-            beneficiaryAddress: formData.beneficiaryAddress,
-            beneficiaryBankName: formData.beneficiaryBankName,
-            beneficiaryAccountNumber: formData.beneficiaryAccountNumber,
             beneficiaryIfscCode: formData.beneficiaryIfscCode,
-            beneType: formData.beneType,
-            latitude: formData.latitude,
-            longitude: formData.longitude,
-            address: formData.address,
           }) as any
         );
+
+        if (res.error) {
+          throw new Error(res.error.message || "Failed to update IFSC code");
+        }
+
+        toast.success("IFSC code updated successfully");
       } else {
         // Add new beneficiary
-        res = await dispatch(addBeneficiary(formData) as any);
-      }
+        const res = await dispatch(addBeneficiary(formData) as any);
 
-      if (res.error) {
-        throw new Error(
-          res.error.message ||
-            `Failed to ${beneficiary ? "update" : "add"} beneficiary`
+        if (res.error) {
+          throw new Error(
+            res.error.message ||
+              `Failed to ${beneficiary ? "update" : "add"} beneficiary`
+          );
+        }
+
+        toast.success(
+          `Beneficiary ${beneficiary ? "updated" : "added"} successfully`
         );
       }
-
-      toast.success(
-        `Beneficiary ${beneficiary ? "updated" : "added"} successfully`
-      );
       setIsModalOpen(false);
       setFormData(initialFormData);
       FetchAllBeneficiary();
@@ -259,223 +254,272 @@ const AddBeneficiaryModal = ({
 
   return (
     <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className={
+          beneficiary
+            ? "sm:max-w-[400px]"
+            : "sm:max-w-[600px] max-h-[90vh] overflow-y-auto"
+        }
+      >
         <DialogHeader>
           <DialogTitle>
-            {beneficiary ? "Update" : "Add New"} Beneficiary
+            {beneficiary ? "Update IFSC Code" : "Add New Beneficiary"}
           </DialogTitle>
           <DialogDescription>
-            Fill in the details to {beneficiary ? "update" : "add"} a
-            beneficiary
+            {beneficiary
+              ? "Update the IFSC code for this beneficiary"
+              : "Fill in the details to add a beneficiary"}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Personal Information */}
-            <div className="space-y-2">
-              <Label htmlFor="beneficiaryName">Beneficiary Name *</Label>
-              <Input
-                id="beneficiaryName"
-                name="beneficiaryName"
-                value={formData.beneficiaryName}
-                onChange={handleInputChange}
-                required
-                placeholder="e.g. John Doe"
-                className={errors.beneficiaryName ? "border-red-500" : ""}
-              />
-              {errors.beneficiaryName && (
-                <p className="text-sm text-red-500">{errors.beneficiaryName}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="beneficiaryMobileNumber">Mobile Number *</Label>
-              <Input
-                id="beneficiaryMobileNumber"
-                name="beneficiaryMobileNumber"
-                value={formData.beneficiaryMobileNumber}
-                onChange={handleInputChange}
-                required
-                pattern="[0-9]{10}"
-                placeholder="e.g. 9876543210"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="beneficiaryEmail">Email</Label>
-              <Input
-                id="beneficiaryEmail"
-                name="beneficiaryEmail"
-                type="email"
-                placeholder="e.g. beneficiary@gmail.com"
-                value={formData.beneficiaryEmail}
-                onChange={handleInputChange}
-                pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="beneficiaryPanNumber">PAN Number *</Label>
-              <Input
-                id="beneficiaryPanNumber"
-                name="beneficiaryPanNumber"
-                value={formData.beneficiaryPanNumber}
-                onChange={handleInputChange}
-                placeholder="e.g. HDGFJ1234H"
-                className={`capitalize ${
-                  errors.beneficiaryPanNumber ? "border-red-500" : ""
-                }`}
-                required
-                // pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}"
-              />
-              {errors.beneficiaryPanNumber && (
-                <p className="text-sm text-red-500">
-                  {errors.beneficiaryPanNumber}
+          {beneficiary ? (
+            // Update IFSC view
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Beneficiary Name</Label>
+                <p className="text-sm text-muted-foreground">
+                  {formData.beneficiaryName}
                 </p>
-              )}
+              </div>
+              {/* <div className="space-y-2">
+                <Label>Current IFSC Code</Label>
+                <p className="text-sm text-muted-foreground">
+                  {beneficiary.beneficiaryIfscCode}
+                </p>
+              </div> */}
+              <div className="space-y-2">
+                <Label htmlFor="beneficiaryIfscCode">New IFSC Code *</Label>
+                <Input
+                  id="beneficiaryIfscCode"
+                  name="beneficiaryIfscCode"
+                  value={formData.beneficiaryIfscCode}
+                  onChange={handleInputChange}
+                  placeholder="Enter new IFSC code"
+                  required
+                  className="uppercase"
+                />
+                {errors.beneficiaryIfscCode && (
+                  <p className="text-sm text-red-500">
+                    {errors.beneficiaryIfscCode}
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="beneficiaryAadhaarNumber">Aadhaar Number *</Label>
-              <Input
-                id="beneficiaryAadhaarNumber"
-                name="beneficiaryAadhaarNumber"
-                value={formData.beneficiaryAadhaarNumber}
-                onChange={handleInputChange}
-                required
-                type="number"
-                maxLength={12}
-                minLength={12}
-                pattern="[0-9]{12}"
-                placeholder="e.g. 123456789012"
-                className="capitalize"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="beneType">Beneficiary Type *</Label>
-              <Select
-                value={formData.beneType}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, beneType: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {beneficiaryTypes.map((type) => (
-                    <SelectItem key={type.ID} value={type.PAY_TYPE}>
-                      {type.PAY_TYPE}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          ) : (
+            // Existing add beneficiary view
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Personal Information */}
+              <div className="space-y-2">
+                <Label htmlFor="beneficiaryName">Beneficiary Name *</Label>
+                <Input
+                  id="beneficiaryName"
+                  name="beneficiaryName"
+                  value={formData.beneficiaryName}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g. John Doe"
+                  className={errors.beneficiaryName ? "border-red-500" : ""}
+                />
+                {errors.beneficiaryName && (
+                  <p className="text-sm text-red-500">
+                    {errors.beneficiaryName}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="beneficiaryMobileNumber">Mobile Number *</Label>
+                <Input
+                  id="beneficiaryMobileNumber"
+                  name="beneficiaryMobileNumber"
+                  value={formData.beneficiaryMobileNumber}
+                  onChange={handleInputChange}
+                  required
+                  pattern="[0-9]{10}"
+                  placeholder="e.g. 9876543210"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="beneficiaryEmail">Email</Label>
+                <Input
+                  id="beneficiaryEmail"
+                  name="beneficiaryEmail"
+                  type="email"
+                  placeholder="e.g. beneficiary@gmail.com"
+                  value={formData.beneficiaryEmail}
+                  onChange={handleInputChange}
+                  pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="beneficiaryPanNumber">PAN Number *</Label>
+                <Input
+                  id="beneficiaryPanNumber"
+                  name="beneficiaryPanNumber"
+                  value={formData.beneficiaryPanNumber}
+                  onChange={handleInputChange}
+                  placeholder="e.g. HDGFJ1234H"
+                  className={`capitalize ${
+                    errors.beneficiaryPanNumber ? "border-red-500" : ""
+                  }`}
+                  required
+                  // pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}"
+                />
+                {errors.beneficiaryPanNumber && (
+                  <p className="text-sm text-red-500">
+                    {errors.beneficiaryPanNumber}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="beneficiaryAadhaarNumber">
+                  Aadhaar Number *
+                </Label>
+                <Input
+                  id="beneficiaryAadhaarNumber"
+                  name="beneficiaryAadhaarNumber"
+                  value={formData.beneficiaryAadhaarNumber}
+                  onChange={handleInputChange}
+                  required
+                  type="number"
+                  maxLength={12}
+                  minLength={12}
+                  pattern="[0-9]{12}"
+                  placeholder="e.g. 123456789012"
+                  className="capitalize"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="beneType">Beneficiary Type *</Label>
+                <Select
+                  value={formData.beneType}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, beneType: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {beneficiaryTypes.map((type) => (
+                      <SelectItem key={type.ID} value={type.PAY_TYPE}>
+                        {type.PAY_TYPE}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Bank Details */}
-            <div className="space-y-2">
-              <Label htmlFor="beneficiaryBankName">Bank Name *</Label>
-              <Input
-                id="beneficiaryBankName"
-                name="beneficiaryBankName"
-                value={formData.beneficiaryBankName}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="beneficiaryAccountNumber">Account Number *</Label>
-              <Input
-                id="beneficiaryAccountNumber"
-                name="beneficiaryAccountNumber"
-                value={formData.beneficiaryAccountNumber}
-                onChange={handleInputChange}
-                required
-                placeholder="e.g. 1234567890"
-                type="number"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="beneficiaryIfscCode">IFSC Code *</Label>
-              <Input
-                id="beneficiaryIfscCode"
-                name="beneficiaryIfscCode"
-                value={formData.beneficiaryIfscCode}
-                onChange={handleInputChange}
-                placeholder="e.g. HDFC0000001"
-                required
-                pattern="^[A-Z]{4}0[A-Z0-9]{6}$"
-              />
-            </div>
+              {/* Bank Details */}
+              <div className="space-y-2">
+                <Label htmlFor="beneficiaryBankName">Bank Name *</Label>
+                <Input
+                  id="beneficiaryBankName"
+                  name="beneficiaryBankName"
+                  value={formData.beneficiaryBankName}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="beneficiaryAccountNumber">
+                  Account Number *
+                </Label>
+                <Input
+                  id="beneficiaryAccountNumber"
+                  name="beneficiaryAccountNumber"
+                  value={formData.beneficiaryAccountNumber}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g. 1234567890"
+                  type="number"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="beneficiaryIfscCode">IFSC Code *</Label>
+                <Input
+                  id="beneficiaryIfscCode"
+                  name="beneficiaryIfscCode"
+                  value={formData.beneficiaryIfscCode}
+                  onChange={handleInputChange}
+                  placeholder="e.g. HDFC0000001"
+                  required
+                  pattern="^[A-Z]{4}0[A-Z0-9]{6}$"
+                />
+              </div>
 
-            {/* Address Details */}
-            <div className="col-span-full">
-              <h3 className="text-lg font-medium mb-4">Address Details</h3>
+              {/* Address Details */}
+              <div className="col-span-full">
+                <h3 className="text-lg font-medium mb-4">Address Details</h3>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address.line">Address Line *</Label>
+                <Input
+                  id="address.line"
+                  name="address.line"
+                  value={formData.address.line}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g. 123, Main Street"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address.area">Area *</Label>
+                <Input
+                  id="address.area"
+                  name="address.area"
+                  value={formData.address.area}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g. New York"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address.city">City *</Label>
+                <Input
+                  id="address.city"
+                  name="address.city"
+                  value={formData.address.city}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g. New York"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address.district">District *</Label>
+                <Input
+                  id="address.district"
+                  name="address.district"
+                  value={formData.address.district}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g. New York"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address.state">State *</Label>
+                <Input
+                  id="address.state"
+                  name="address.state"
+                  value={formData.address.state}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g. New York"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address.pincode">Pincode *</Label>
+                <Input
+                  id="address.pincode"
+                  name="address.pincode"
+                  value={formData.address.pincode}
+                  onChange={handleInputChange}
+                  required
+                  pattern="[0-9]{6}"
+                  placeholder="e.g. 123456"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="address.line">Address Line *</Label>
-              <Input
-                id="address.line"
-                name="address.line"
-                value={formData.address.line}
-                onChange={handleInputChange}
-                required
-                placeholder="e.g. 123, Main Street"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address.area">Area *</Label>
-              <Input
-                id="address.area"
-                name="address.area"
-                value={formData.address.area}
-                onChange={handleInputChange}
-                required
-                placeholder="e.g. New York"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address.city">City *</Label>
-              <Input
-                id="address.city"
-                name="address.city"
-                value={formData.address.city}
-                onChange={handleInputChange}
-                required
-                placeholder="e.g. New York"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address.district">District *</Label>
-              <Input
-                id="address.district"
-                name="address.district"
-                value={formData.address.district}
-                onChange={handleInputChange}
-                required
-                placeholder="e.g. New York"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address.state">State *</Label>
-              <Input
-                id="address.state"
-                name="address.state"
-                value={formData.address.state}
-                onChange={handleInputChange}
-                required
-                placeholder="e.g. New York"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address.pincode">Pincode *</Label>
-              <Input
-                id="address.pincode"
-                name="address.pincode"
-                value={formData.address.pincode}
-                onChange={handleInputChange}
-                required
-                pattern="[0-9]{6}"
-                placeholder="e.g. 123456"
-              />
-            </div>
-          </div>
+          )}
 
           <div className="flex justify-end gap-4">
             <Button
@@ -491,9 +535,8 @@ const AddBeneficiaryModal = ({
                   ? "Updating..."
                   : "Adding..."
                 : beneficiary
-                ? "Update"
-                : "Add"}{" "}
-              Beneficiary
+                ? "Update IFSC"
+                : "Add Beneficiary"}
             </Button>
           </div>
         </form>
