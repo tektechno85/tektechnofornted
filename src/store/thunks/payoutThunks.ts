@@ -245,23 +245,19 @@ export const checkPayoutStatus = createAsyncThunk(
   "payout/checkStatus",
   async (orderId: string, { rejectWithValue }) => {
     try {
-      const response = await fetch(
-        getApiUrl(`/payout/check-status?orderId=${orderId}`),
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const res = await getAPI<{
+        response: boolean;
+        message: string;
+        data: any;
+        status: string;
+        timestamp: string;
+      }>(`/payout/check-status?orderId=${orderId}`);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || "Failed to check payout status");
+      if (!res.response) {
+        throw new Error(res.message || "Failed to check payout status");
       }
 
-      const data = await response.json();
-      return data;
+      return res.data;
     } catch (error) {
       return rejectWithValue((error as Error).message);
     }
@@ -272,27 +268,21 @@ export const fetchTransactionDetails = createAsyncThunk(
   "payout/fetchTransactionDetails",
   async (params: TransactionDetailsParams, { rejectWithValue }) => {
     try {
-      const response = await fetch(
-        getApiUrl(
-          `/payout/transaction-details?beneficiaryId=${params.beneficiaryId}&pageNumber=${params.pageNumber}&pageSize=${params.pageSize}`
-        ),
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+      const res = await getAPI<{
+        response: boolean;
+        message: string;
+        data: any;
+        status: string;
+        timestamp: string;
+      }>(
+        `/payout/transaction-details?beneficiaryId=${params.beneficiaryId}&pageNumber=${params.pageNumber}&pageSize=${params.pageSize}`
       );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(
-          errorData?.message || "Failed to fetch transaction details"
-        );
+      if (!res.response) {
+        throw new Error(res.message || "Failed to fetch transaction details");
       }
 
-      const data = await response.json();
-      return data;
+      return res.data;
     } catch (error) {
       return rejectWithValue((error as Error).message);
     }

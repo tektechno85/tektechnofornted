@@ -13,6 +13,7 @@ import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Payout from "@/pages/Payout";
 import Beneficiary from "@/pages/Beneficiary";
+import Transactions from "@/pages/Transactions";
 import NotFound from "@/pages/NotFound";
 
 function App() {
@@ -44,6 +45,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Beneficiary />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/transactions/:beneficiaryId"
+              element={
+                <ProtectedRoute>
+                  <Transactions />
                 </ProtectedRoute>
               }
             />

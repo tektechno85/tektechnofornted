@@ -19,6 +19,7 @@ import {
   X,
   Pencil,
   MoreHorizontal,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +56,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import AddBeneficiaryModal from "@/components/beneficiary/AddBeneficiaryModal";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useNavigate } from "react-router-dom";
 
 interface Beneficiary {
   beneficiaryId: string;
@@ -101,19 +104,26 @@ interface BeneficiaryFormData {
 
 const Beneficiary = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedBeneficiary, setSelectedBeneficiary] =
     useState<BeneficiaryFormData | null>(null);
 
   const FetchAllBeneficiary = async () => {
-    const res = await dispatch(
-      fetchBeneficiaryList({ pageNumber: 0, pageSize: 10 }) as any
-    );
-    setBeneficiaries(res.payload || []);
+    setIsLoading(true);
+    try {
+      const res = await dispatch(
+        fetchBeneficiaryList({ pageNumber: 0, pageSize: 10 }) as any
+      );
+      setBeneficiaries(res.payload || []);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -251,7 +261,21 @@ const Beneficiary = () => {
               </div>
 
               {/* Table */}
-              {filteredBeneficiaries.length > 0 ? (
+              {isLoading ? (
+                <div className="space-y-4">
+                  {[...Array(5)].map((_, index) => (
+                    <div key={index} className="flex items-center space-x-4">
+                      <Skeleton className="h-4 w-4" />
+                      <Skeleton className="h-12 w-[200px]" />
+                      <Skeleton className="h-12 w-[200px]" />
+                      <Skeleton className="h-12 w-[150px]" />
+                      <Skeleton className="h-6 w-[80px]" />
+                      <Skeleton className="h-6 w-[100px]" />
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                    </div>
+                  ))}
+                </div>
+              ) : filteredBeneficiaries.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -320,10 +344,16 @@ const Beneficiary = () => {
                                 <Pencil className="mr-2 h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>
-                              {/* <DropdownMenuItem className="text-red-600">
-                                <X className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem> */}
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  navigate(
+                                    `/transactions/${beneficiary.beneficiaryId}`
+                                  )
+                                }
+                              >
+                                <ExternalLink className="mr-2 h-4 w-4" />
+                                View Transactions
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
