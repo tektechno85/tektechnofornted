@@ -58,7 +58,7 @@ interface SendMoneyData {
   comment: string;
   remarks: string;
   amount: number;
-  transferType: "IMPS" | "NEFT" | "RTGS"; // Using union type for specific values
+  transferType: "IMPS" | "NEFT" | "RTGS";
 }
 
 interface TransactionDetailsParams {
@@ -98,6 +98,44 @@ interface PayoutTransactionResponse {
   empty: boolean;
 }
 
+interface BulkUploadResponse {
+  successful: number;
+  failed: number;
+  errors: Array<{
+    row: number;
+    error: string;
+  }>;
+}
+
+// Add the bulk upload thunk
+export const bulkUploadBeneficiaries = createAsyncThunk(
+  "payout/bulkUploadBeneficiaries",
+  async (file: File, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(getApiUrl('/payout/beneficiaries/bulk-upload'), {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || 'Failed to upload beneficiaries');
+      }
+
+      const data = await response.json();
+      return data as BulkUploadResponse;
+    } catch (error) {
+      return rejectWithValue((error as Error).message);
+    }
+  }
+);
+
 export const fetchBeneficiaryTypes = createAsyncThunk(
   "payout/fetchBeneficiaryTypes",
   async (_, { rejectWithValue }) => {
@@ -133,7 +171,7 @@ export const fetchPayoutReasons = createAsyncThunk(
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({}), // Empty body as per the curl command
+        body: JSON.stringify({}),
       });
 
       if (!response.ok) {
@@ -208,8 +246,6 @@ export const updateBeneficiary = createAsyncThunk(
   async (params: UpdateBeneficiaryParams, { rejectWithValue }) => {
     try {
       console.log({ params });
-      // beneficiaryIfscCode=IOBA0000567
-      // beneficiaryId=CY_L4JGlyWrBJ6
 
       const res = await postAPI<{
         response: boolean;

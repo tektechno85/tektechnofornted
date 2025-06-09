@@ -19,9 +19,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllPayoutTransactions } from "@/store/thunks/payoutThunks";
+import { fetchAllPayoutTransactions, checkPayoutStatus } from "@/store/thunks/payoutThunks";
+import { toast } from "sonner";
 import dayjs from "dayjs";
 
 interface PayoutData {
@@ -36,6 +43,25 @@ interface PayoutData {
   chargedAmount: string;
   createdAt: string;
   updatedAt: string;
+}
+
+interface StatusResponse {
+  statuscode: string;
+  status: string;
+  data: {
+    orderId: string;
+    cyrusOrderId: string;
+    cyrus_id: string;
+    opening_bal: string;
+    locked_amt: string;
+    charged_amt: string;
+    rrn: string;
+  };
+}
+
+interface ApiResponse<T> {
+  payload: T;
+  error?: string;
 }
 
 interface RootState {
@@ -53,6 +79,9 @@ const Payout = () => {
   const [payoutType, setPayoutType] = useState("all");
   const [payouts, setPayouts] = useState<PayoutData[]>([]);
   const [loading, setLoading] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState<string | null>(null);
+  const [statusResponse, setStatusResponse] = useState<StatusResponse | null>(null);
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const dispatch = useDispatch();
   // const { content: payouts, loading } = useSelector(
   //   (state: RootState) => state.payout.allPayoutTransactions
@@ -82,12 +111,110 @@ const Payout = () => {
     setLoading(false);
   };
 
+  const handleCheckStatus = async (orderId: string) => {
+    setCheckingStatus(orderId);
+    try {
+      const response = (await dispatch(
+        checkPayoutStatus(orderId) as any
+      )) as unknown as ApiResponse<StatusResponse>;
+      
+      if (!response.payload) {
+        throw new Error(response.error || "Failed to check status");
+      }
+      
+      setStatusResponse(response.payload);
+      setIsStatusModalOpen(true);
+      toast.success("Status check completed");
+    } catch (error: any) {
+      const errorMessage = error?.message || "Failed to check status";
+      toast.error(errorMessage);
+    } finally {
+      setCheckingStatus(null);
+    }
+  };
+
   useEffect(() => {
     FetchAllPayouts();
   }, []);
 
   return (
     <DashboardLayout>
+      {/* Status Check Modal */}
+      <Dialog open={isStatusModalOpen} onOpenChange={setIsStatusModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Transaction Status Details</DialogTitle>
+          </DialogHeader>
+          {statusResponse && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Order ID</p>
+                  <p className="font-medium">{statusResponse.data.orderId}</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Cyrus Order ID
+                  </p>
+                  <p className="font-medium">
+                    {statusResponse.data.cyrusOrderId}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Status</p>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs ${
+                      statusResponse.status.toLowerCase() === "completed"
+                        ? "bg-green-100 text-green-800"
+                        : statusResponse.status.toLowerCase() === "failed"
+                        ? "bg-red-100 text-red-800"
+                        : "bg-yellow-100 text-yellow-800"
+                    }`}
+                  >
+                    {statusResponse.status}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">RRN</p>
+                  <p className="font-medium">
+                    {statusResponse.data.rrn || "N/A"}
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-4 pt-4 border-t">
+                <h4 className="font-medium">Amount Details</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Opening Balance
+                    </p>
+                    <p className="font-medium text-green-600">
+                      ₹{parseFloat(statusResponse.data.opening_bal).toFixed(2)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Locked Amount
+                    </p>
+                    <p className="font-medium text-yellow-600">
+                      ₹{parseFloat(statusResponse.data.locked_amt).toFixed(2)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Charged Amount
+                    </p>
+                    <p className="font-medium text-blue-600">
+                      ₹{parseFloat(statusResponse.data.charged_amt).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Header */}
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b">
         <div className="flex h-16 items-center justify-between py-4 px-6">
@@ -165,7 +292,7 @@ const Payout = () => {
                       <TableHead>CHARGED AMOUNT</TableHead>
                       <TableHead>STATUS</TableHead>
                       <TableHead>DATE</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
+                      <TableHead>ACTIONS</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -194,7 +321,7 @@ const Payout = () => {
                             <Skeleton className="h-4 w-[100px]" />
                           </TableCell>
                           <TableCell>
-                            <Skeleton className="h-8 w-8 rounded-full" />
+                            <Skeleton className="h-8 w-[100px]" />
                           </TableCell>
                         </TableRow>
                       ))
@@ -206,6 +333,9 @@ const Payout = () => {
                           </TableCell>
                           <TableCell className="font-medium">
                             {payout.orderId}
+                            <div className="text-xs text-muted-foreground">
+                              {payout.cyrusOrderId}
+                            </div>
                           </TableCell>
                           <TableCell className="text-right">
                             ₹{" "}
@@ -238,9 +368,23 @@ const Payout = () => {
                             {dayjs(payout.createdAt).format("DD-MM-YYYY HH:mm")}
                           </TableCell>
                           <TableCell>
-                            <Button variant="ghost" size="icon">
-                              <ChevronDown className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleCheckStatus(payout.orderId)}
+                                disabled={checkingStatus === payout.orderId}
+                              >
+                                {checkingStatus === payout.orderId ? (
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  "Check Status"
+                                )}
+                              </Button>
+                              <Button variant="ghost" size="icon">
+                                <ChevronDown className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))

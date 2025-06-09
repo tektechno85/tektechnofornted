@@ -95,6 +95,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import BulkBeneficiaryUpload from "./BulkBeneficiaryUpload";
 
 interface Beneficiary {
   beneficiaryId: string;
@@ -172,6 +173,7 @@ const Beneficiary = () => {
   const [selectedBeneficiaryDetails, setSelectedBeneficiaryDetails] =
     useState<Beneficiary | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isBulkUploadModalOpen, setIsBulkUploadModalOpen] = useState(false);
 
   const sendMoneyForm = useForm<SendMoneyFormData>({
     resolver: zodResolver(sendMoneySchema),
@@ -291,9 +293,17 @@ const Beneficiary = () => {
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b">
         <div className="flex h-16 items-center justify-between py-4 px-6">
           <h1 className="text-xl font-semibold">Beneficiaries</h1>
-          <Button onClick={() => setIsModalOpen(true)}>
-            Add New Beneficiary
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setIsModalOpen(true)}>
+              Add New Beneficiary
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsBulkUploadModalOpen(true)}
+            >
+              Add Bulk Beneficiary
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -314,6 +324,15 @@ const Beneficiary = () => {
         beneficiaryMobileNumber={
           selectedBeneficiaryForPayment?.beneficiaryMobileNumber || ""
         }
+      />
+
+      <BulkBeneficiaryUpload
+        isOpen={isBulkUploadModalOpen}
+        onClose={() => setIsBulkUploadModalOpen(false)}
+        onUploadSuccess={() => {
+          FetchAllBeneficiary(0); // Refresh the beneficiary list
+          setCurrentPage(0); // Reset to first page
+        }}
       />
 
       {/* View Details Dialog */}
@@ -447,18 +466,16 @@ const Beneficiary = () => {
                         Status
                       </Label>
                       <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                          selectedBeneficiaryDetails.status
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${selectedBeneficiaryDetails.status
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                          }`}
                       >
                         <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            selectedBeneficiaryDetails.status
-                              ? "bg-green-600"
-                              : "bg-red-600"
-                          }`}
+                          className={`h-1.5 w-1.5 rounded-full ${selectedBeneficiaryDetails.status
+                            ? "bg-green-600"
+                            : "bg-red-600"
+                            }`}
                         />
                         {selectedBeneficiaryDetails.status
                           ? "Active"
@@ -695,11 +712,10 @@ const Beneficiary = () => {
                           </TableCell>
                           <TableCell>
                             <span
-                              className={`px-2 py-1 rounded-full text-xs ${
-                                beneficiary.status
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-red-100 text-red-800"
-                              }`}
+                              className={`px-2 py-1 rounded-full text-xs ${beneficiary.status
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                                }`}
                             >
                               {beneficiary.status ? "Active" : "Inactive"}
                             </span>
