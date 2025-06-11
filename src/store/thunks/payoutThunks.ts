@@ -108,28 +108,113 @@ interface BulkUploadResponse {
 }
 
 // Add the bulk upload thunk
+// export const bulkUploadBeneficiaries = createAsyncThunk(
+//   "payout/bulkUploadBeneficiaries",
+//   async (
+//     {
+//       file,
+//       beneficiaryData,
+//     }: {
+//       file: File;
+//       beneficiaryData: {
+//         beneficiaryName: string;
+//         beneficiaryMobileNumber: string;
+//         beneficiaryEmail: string;
+//         beneficiaryPanNumber: string;
+//         beneficiaryAadhaarNumber: string;
+//         beneficiaryAddress: string;
+//         beneficiaryBankName: string;
+//         beneficiaryAccountNumber: string;
+//         beneficiaryIfscCode: string;
+//         beneType: string;
+//         latitude: number;
+//         longitude: number;
+//         address: {
+//           line: string;
+//           area: string;
+//           city: string;
+//           district: string;
+//           state: string;
+//           pincode: string;
+//         };
+//       };
+//     },
+//     { rejectWithValue }
+//   ) => {
+//     try {
+//       const formData = new FormData();
+//       formData.append("file", file);
+//       formData.append("beneficiaryData", JSON.stringify(beneficiaryData));
+
+//       const response = await fetch(
+//         getApiUrl("/payout/beneficiaries/bulk-upload"),
+//         {
+//           method: "POST",
+//           body: formData,
+//           headers: {
+//             Authorization: `Bearer ${localStorage.getItem("token")}`,
+//           },
+//         }
+//       );
+
+//       if (!response.ok) {
+//         const errorData = await response.json().catch(() => null);
+//         throw new Error(errorData?.message || "Failed to upload beneficiaries");
+//       }
+
+//       const data = await response.json();
+//       return data as BulkUploadResponse;
+//     } catch (error) {
+//       return rejectWithValue((error as Error).message);
+//     }
+//   }
+// );
 export const bulkUploadBeneficiaries = createAsyncThunk(
   "payout/bulkUploadBeneficiaries",
-  async (file: File, { rejectWithValue }) => {
+  async (
+    {
+      file,
+      beneficiaryData,
+      onSuccess,
+      onError,
+    }: {
+      file: File;
+      beneficiaryData: any;
+      onSuccess: () => void;
+      onError: (error: string) => void;
+    },
+    { rejectWithValue }
+  ) => {
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append("file", file);
+      formData.append(
+        "data",
+        new Blob([JSON.stringify(beneficiaryData)], {
+          type: "application/json",
+        })
+      );
 
-      const response = await fetch(getApiUrl('/payout/beneficiaries/bulk-upload'), {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+      const res: Response = await fetch(
+        getApiUrl("/payout/beneficiaries/bulk-upload"),
+        {
+          method: "POST",
+          body: formData,
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            // DO NOT set Content-Type manually; let browser handle it for multipart
+          },
+        }
+      );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || 'Failed to upload beneficiaries');
+      if (!res.ok) {
+        onError(res.statusText || "Failed to upload beneficiaries");
+        throw new Error(res.statusText || "Failed to upload beneficiaries");
       }
 
-      const data = await response.json();
-      return data as BulkUploadResponse;
+      onSuccess();
+
+      return res.json();
     } catch (error) {
       return rejectWithValue((error as Error).message);
     }
