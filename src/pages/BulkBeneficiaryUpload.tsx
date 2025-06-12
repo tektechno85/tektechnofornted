@@ -60,15 +60,12 @@ interface ExcelRowData {
 
 interface BeneficiaryFormData {
   id?: string | number;
-  beneficiaryName: string;
   beneficiaryMobileNumber: string;
   beneficiaryEmail: string;
   beneficiaryPanNumber: string;
   beneficiaryAadhaarNumber: string;
   beneficiaryAddress: string;
   beneficiaryBankName: string;
-  beneficiaryAccountNumber: string;
-  beneficiaryIfscCode: string;
   beneType: string;
   latitude: number;
   longitude: number;
@@ -102,15 +99,12 @@ interface FormErrors {
 }
 
 const initialFormData: BeneficiaryFormData = {
-  beneficiaryName: "",
   beneficiaryMobileNumber: "",
   beneficiaryEmail: "",
   beneficiaryPanNumber: "",
   beneficiaryAadhaarNumber: "",
   beneficiaryAddress: "",
   beneficiaryBankName: "",
-  beneficiaryAccountNumber: "",
-  beneficiaryIfscCode: "",
   beneType: "CUSTOMER",
   latitude: 0,
   longitude: 0,
@@ -309,11 +303,6 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
   const validateForm = () => {
     const newErrors: FormErrors = {};
 
-    // Required field validation
-    if (!formData.beneficiaryName.trim()) {
-      newErrors.beneficiaryName = "Beneficiary name is required";
-    }
-
     // Mobile validation
     const mobileRegex = /^[0-9]{10}$/;
     if (!mobileRegex.test(formData.beneficiaryMobileNumber)) {
@@ -344,16 +333,7 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
     if (!formData.beneficiaryBankName.trim()) {
       newErrors.beneficiaryBankName = "Bank name is required";
     }
-
-    if (!formData.beneficiaryAccountNumber.trim()) {
-      newErrors.beneficiaryAccountNumber = "Account number is required";
-    }
-
-    const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
-    if (!ifscRegex.test(formData.beneficiaryIfscCode)) {
-      newErrors.beneficiaryIfscCode = "Invalid IFSC code format";
-    }
-
+    
     // Address validation with specific error messages
     if (!formData.address.line.trim()) {
       newErrors.address = {
@@ -589,21 +569,6 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Personal Information */}
             <div className="space-y-2">
-              <Label htmlFor="beneficiaryName">Beneficiary Name *</Label>
-              <Input
-                id="beneficiaryName"
-                name="beneficiaryName"
-                value={formData.beneficiaryName}
-                onChange={handleInputChange}
-                required
-                placeholder="e.g. John Doe"
-                className={errors.beneficiaryName ? "border-red-500" : ""}
-              />
-              {errors.beneficiaryName && (
-                <p className="text-sm text-red-500">{errors.beneficiaryName}</p>
-              )}
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="beneficiaryMobileNumber">Mobile Number *</Label>
               <Input
                 id="beneficiaryMobileNumber"
@@ -723,45 +688,6 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
                 </p>
               )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="beneficiaryAccountNumber">Account Number *</Label>
-              <Input
-                id="beneficiaryAccountNumber"
-                name="beneficiaryAccountNumber"
-                value={formData.beneficiaryAccountNumber}
-                onChange={handleInputChange}
-                required
-                placeholder="e.g. 1234567890"
-                type="number"
-                className={
-                  errors.beneficiaryAccountNumber ? "border-red-500" : ""
-                }
-              />
-              {errors.beneficiaryAccountNumber && (
-                <p className="text-sm text-red-500">
-                  {errors.beneficiaryAccountNumber}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="beneficiaryIfscCode">IFSC Code *</Label>
-              <Input
-                id="beneficiaryIfscCode"
-                name="beneficiaryIfscCode"
-                value={formData.beneficiaryIfscCode}
-                onChange={handleInputChange}
-                placeholder="e.g. HDFC0000001"
-                required
-                pattern="^[A-Z]{4}0[A-Z0-9]{6}$"
-                className={errors.beneficiaryIfscCode ? "border-red-500" : ""}
-              />
-              {errors.beneficiaryIfscCode && (
-                <p className="text-sm text-red-500">
-                  {errors.beneficiaryIfscCode}
-                </p>
-              )}
-            </div>
-
             {/* Address Details */}
             <div className="col-span-full">
               <h3 className="text-lg font-medium mb-4">Address Details</h3>
