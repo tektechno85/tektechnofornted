@@ -169,6 +169,7 @@ const Beneficiary = () => {
     useState<Beneficiary | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
   const pageSize = 10;
   const [selectedBeneficiaryDetails, setSelectedBeneficiaryDetails] =
     useState<Beneficiary | null>(null);
@@ -192,9 +193,10 @@ const Beneficiary = () => {
       );
       console.log("API Response:", res.payload); // Debug log
       if (res.payload) {
-        setBeneficiaries(res.payload || []);
+        setBeneficiaries(res.payload.beneficiaries || []);
         setTotalPages(res.payload.totalPages || 0);
         setCurrentPage(res.payload.pageNumber || 0);
+        setTotalElements(res.payload.totalElements || 0);
       }
     } catch (error) {
       console.error("Error fetching beneficiaries:", error);
@@ -466,16 +468,18 @@ const Beneficiary = () => {
                         Status
                       </Label>
                       <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${selectedBeneficiaryDetails.status
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
-                          }`}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+                          selectedBeneficiaryDetails.status
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
                       >
                         <span
-                          className={`h-1.5 w-1.5 rounded-full ${selectedBeneficiaryDetails.status
-                            ? "bg-green-600"
-                            : "bg-red-600"
-                            }`}
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            selectedBeneficiaryDetails.status
+                              ? "bg-green-600"
+                              : "bg-red-600"
+                          }`}
                         />
                         {selectedBeneficiaryDetails.status
                           ? "Active"
@@ -712,10 +716,11 @@ const Beneficiary = () => {
                           </TableCell>
                           <TableCell>
                             <span
-                              className={`px-2 py-1 rounded-full text-xs ${beneficiary.status
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
-                                }`}
+                              className={`px-2 py-1 rounded-full text-xs ${
+                                beneficiary.status
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}
                             >
                               {beneficiary.status ? "Active" : "Inactive"}
                             </span>

@@ -88,14 +88,9 @@ interface PayoutTransaction {
 }
 
 interface PayoutTransactionResponse {
-  content: PayoutTransaction[];
+  transactions: PayoutTransaction[];
   totalElements: number;
   totalPages: number;
-  pageNumber: number;
-  pageSize: number;
-  last: boolean;
-  first: boolean;
-  empty: boolean;
 }
 
 interface BulkUploadResponse {
@@ -436,7 +431,11 @@ export const fetchBeneficiaryList = createAsyncThunk(
       const res = await getAPI<{
         response: boolean;
         message: string;
-        data: Beneficiary[];
+        data: {
+          beneficiaries: Beneficiary[];
+          totalElements: number;
+          totalPages: number;
+        };
         status: string;
         timestamp: string;
       }>(
@@ -447,7 +446,11 @@ export const fetchBeneficiaryList = createAsyncThunk(
         throw new Error(res.message || "Failed to fetch beneficiary list");
       }
 
-      return res.data;
+      return {
+        beneficiaries: res.data.beneficiaries,
+        totalElements: res.data.totalElements,
+        totalPages: res.data.totalPages,
+      };
     } catch (error) {
       return rejectWithValue((error as Error).message);
     }
@@ -472,7 +475,11 @@ export const fetchAllPayoutTransactions = createAsyncThunk(
         throw new Error(res.message || "Failed to fetch payout transactions");
       }
 
-      return res.data;
+      return {
+        transactions: res.data.transactions,
+        totalElements: res.data.totalElements,
+        totalPages: res.data.totalPages,
+      };
     } catch (error) {
       return rejectWithValue((error as Error).message);
     }

@@ -27,9 +27,20 @@ import {
 } from "@/components/ui/dialog";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllPayoutTransactions, checkPayoutStatus } from "@/store/thunks/payoutThunks";
+import {
+  fetchAllPayoutTransactions,
+  checkPayoutStatus,
+} from "@/store/thunks/payoutThunks";
 import { toast } from "sonner";
 import dayjs from "dayjs";
+import {
+  Pagination,
+  PaginationPrevious,
+  PaginationItem,
+  PaginationContent,
+  PaginationLink,
+  PaginationNext,
+} from "@/components/ui/pagination";
 
 interface PayoutData {
   status: string;
@@ -80,9 +91,14 @@ const Payout = () => {
   const [payouts, setPayouts] = useState<PayoutData[]>([]);
   const [loading, setLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState<string | null>(null);
-  const [statusResponse, setStatusResponse] = useState<StatusResponse | null>(null);
+  const [statusResponse, setStatusResponse] = useState<StatusResponse | null>(
+    null
+  );
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const dispatch = useDispatch();
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
   // const { content: payouts, loading } = useSelector(
   //   (state: RootState) => state.payout.allPayoutTransactions
   // );
@@ -102,11 +118,16 @@ const Payout = () => {
   const FetchAllPayouts = async () => {
     setLoading(true);
     const response = await dispatch(
-      fetchAllPayoutTransactions({ pageNumber: 0, pageSize: 10 }) as any
+      fetchAllPayoutTransactions({
+        pageNumber: currentPage,
+        pageSize: 10,
+      }) as any
     );
     console.log({ response });
     if (response.payload) {
-      setPayouts(response.payload);
+      setPayouts(response.payload.transactions);
+      setTotalPages(response.payload.totalPages);
+      setTotalElements(response.payload.totalElements);
     }
     setLoading(false);
   };
@@ -117,11 +138,11 @@ const Payout = () => {
       const response = (await dispatch(
         checkPayoutStatus(orderId) as any
       )) as unknown as ApiResponse<StatusResponse>;
-      
+
       if (!response.payload) {
         throw new Error(response.error || "Failed to check status");
       }
-      
+
       setStatusResponse(response.payload);
       setIsStatusModalOpen(true);
       toast.success("Status check completed");
@@ -131,6 +152,11 @@ const Payout = () => {
     } finally {
       setCheckingStatus(null);
     }
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    FetchAllPayouts();
   };
 
   useEffect(() => {
@@ -372,7 +398,9 @@ const Payout = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleCheckStatus(payout.orderId)}
+                                onClick={() =>
+                                  handleCheckStatus(payout.orderId)
+                                }
                                 disabled={checkingStatus === payout.orderId}
                               >
                                 {checkingStatus === payout.orderId ? (
@@ -398,6 +426,62 @@ const Payout = () => {
                   </TableBody>
                 </Table>
               </div>
+
+              {/* Pagination */}
+              {!loading && filteredPayouts.length > 0 && (
+                <div className="flex items-center justify-center py-4">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (currentPage > 0)
+                              handlePageChange(currentPage - 1);
+                          }}
+                          aria-disabled={currentPage === 0}
+                          className={
+                            currentPage === 0
+                              ? "pointer-events-none opacity-50"
+                              : ""
+                          }
+                        />
+                      </PaginationItem>
+                      {[...Array(totalPages)].map((_, index) => (
+                        <PaginationItem key={index}>
+                          <PaginationLink
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handlePageChange(index);
+                            }}
+                            isActive={currentPage === index}
+                          >
+                            {index + 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (currentPage < totalPages - 1)
+                              handlePageChange(currentPage + 1);
+                          }}
+                          aria-disabled={currentPage === totalPages - 1}
+                          className={
+                            currentPage === totalPages - 1
+                              ? "pointer-events-none opacity-50"
+                              : ""
+                          }
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
