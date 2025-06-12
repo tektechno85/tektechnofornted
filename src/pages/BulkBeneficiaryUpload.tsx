@@ -304,25 +304,25 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
     const newErrors: FormErrors = {};
 
     // Mobile validation
-    const mobileRegex = /^[0-9]{10}$/;
-    if (!mobileRegex.test(formData.beneficiaryMobileNumber)) {
-      newErrors.beneficiaryMobileNumber = "Mobile number should be 10 digits";
-    }
+    // const mobileRegex = /^[0-9]{10}$/;
+    // if (!mobileRegex.test(formData.beneficiaryMobileNumber)) {
+    //   newErrors.beneficiaryMobileNumber = "Mobile number should be 10 digits";
+    // }
 
     // Email validation if provided
-    if (formData.beneficiaryEmail) {
-      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-      if (!emailRegex.test(formData.beneficiaryEmail)) {
-        newErrors.beneficiaryEmail = "Invalid email format";
-      }
-    }
+    // if (formData.beneficiaryEmail) {
+    //   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    //   if (!emailRegex.test(formData.beneficiaryEmail)) {
+    //     newErrors.beneficiaryEmail = "Invalid email format";
+    //   }
+    // }
 
     // PAN validation
-    const panRegex = /[A-Z]{5}[0-9]{4}[A-Z]{1}/;
-    if (!panRegex.test(formData.beneficiaryPanNumber)) {
-      newErrors.beneficiaryPanNumber =
-        "Invalid PAN format. Should be like ABCDE1234F";
-    }
+    // const panRegex = /[A-Z]{5}[0-9]{4}[A-Z]{1}/;
+    // if (!panRegex.test(formData.beneficiaryPanNumber)) {
+    //   newErrors.beneficiaryPanNumber =
+    //     "Invalid PAN format. Should be like ABCDE1234F";
+    // }
 
     // Aadhaar validation
     if (formData.beneficiaryAadhaarNumber.length !== 12) {
@@ -568,7 +568,7 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
           {/* Beneficiary Form */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Personal Information */}
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label htmlFor="beneficiaryMobileNumber">Mobile Number *</Label>
               <Input
                 id="beneficiaryMobileNumber"
@@ -589,8 +589,8 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
                   {errors.beneficiaryMobileNumber}
                 </p>
               )}
-            </div>
-            <div className="space-y-2">
+            </div> */}
+            {/* <div className="space-y-2">
               <Label htmlFor="beneficiaryEmail">Email</Label>
               <Input
                 id="beneficiaryEmail"
@@ -607,8 +607,8 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
                   {errors.beneficiaryEmail}
                 </p>
               )}
-            </div>
-            <div className="space-y-2">
+            </div> */}
+            {/* <div className="space-y-2">
               <Label htmlFor="beneficiaryPanNumber">PAN Number *</Label>
               <Input
                 id="beneficiaryPanNumber"
@@ -626,7 +626,7 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
                   {errors.beneficiaryPanNumber}
                 </p>
               )}
-            </div>
+            </div> */}
             <div className="space-y-2">
               <Label htmlFor="beneficiaryAadhaarNumber">Aadhaar Number *</Label>
               <Input
