@@ -80,23 +80,29 @@ const Transactions = () => {
     null
   );
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const [pageSize] = useState(10);
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = async (page = currentPage) => {
     if (!beneficiaryId) return;
     setIsLoading(true);
     setError(null);
     try {
-      const response = (await dispatch(
+      const response = await dispatch(
         fetchTransactionDetails({
           beneficiaryId,
-          pageNumber: 0,
-          pageSize: 10,
+          pageNumber: page,
+          pageSize: pageSize,
         }) as any
-      )) as unknown as ApiResponse<Transaction[]>;
+      );
       if (!response.payload) {
         throw new Error(response.error || "Failed to fetch transactions");
       }
-      setTransactions(response.payload || []);
+      setTransactions(response.payload.transactions || []);
+      setTotalPages(response.payload.totalPages || 0);
+      setTotalElements(response.payload.totalElements || 0);
     } catch (error: any) {
       const errorMessage =
         error?.message || "Something went wrong while fetching transactions";
@@ -108,8 +114,8 @@ const Transactions = () => {
   };
 
   useEffect(() => {
-    fetchTransactions();
-  }, [beneficiaryId]);
+    fetchTransactions(currentPage);
+  }, [beneficiaryId, currentPage]);
 
   const handleCheckStatus = async (orderId: string) => {
     setCheckingStatus(orderId);
@@ -132,7 +138,13 @@ const Transactions = () => {
   };
 
   const handleRetry = () => {
-    fetchTransactions();
+    fetchTransactions(currentPage);
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page !== currentPage) {
+      setCurrentPage(page);
+    }
   };
 
   if (!beneficiaryId) {
@@ -303,73 +315,166 @@ const Transactions = () => {
                     ))}
                   </div>
                 ) : filteredTransactions.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ORDER ID</TableHead>
-                        <TableHead>OPENING BALANCE</TableHead>
-                        <TableHead>LOCKED AMOUNT</TableHead>
-                        <TableHead>CHARGED AMOUNT</TableHead>
-                        <TableHead>STATUS</TableHead>
-                        <TableHead>RRN</TableHead>
-                        <TableHead>ACTIONS</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredTransactions.map((transaction) => (
-                        <TableRow key={transaction.orderId}>
-                          <TableCell className="font-medium">
-                            {transaction.orderId}
-                            <div className="text-xs text-muted-foreground">
-                              {transaction.cyrusOrderId}
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-medium text-green-600">
-                            ₹{parseFloat(transaction.openingBalance).toFixed(2)}
-                          </TableCell>
-                          <TableCell className="font-medium text-yellow-600">
-                            ₹{parseFloat(transaction.lockedAmount).toFixed(2)}
-                          </TableCell>
-                          <TableCell className="font-medium text-blue-600">
-                            ₹{parseFloat(transaction.chargedAmount).toFixed(2)}
-                          </TableCell>
-                          <TableCell>
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs ${
-                                transaction.status.toLowerCase() === "completed"
-                                  ? "bg-green-100 text-green-800"
-                                  : transaction.status.toLowerCase() ===
-                                    "failed"
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-yellow-100 text-yellow-800"
-                              }`}
-                            >
-                              {transaction.status}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {transaction.rrnNumber}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                handleCheckStatus(transaction.orderId)
-                              }
-                              disabled={checkingStatus === transaction.orderId}
-                            >
-                              {checkingStatus === transaction.orderId ? (
-                                <RefreshCw className="h-4 w-4 animate-spin" />
-                              ) : (
-                                "Check Status"
-                              )}
-                            </Button>
-                          </TableCell>
+                  <>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>ORDER ID</TableHead>
+                          <TableHead>OPENING BALANCE</TableHead>
+                          <TableHead>LOCKED AMOUNT</TableHead>
+                          <TableHead>CHARGED AMOUNT</TableHead>
+                          <TableHead>STATUS</TableHead>
+                          <TableHead>RRN</TableHead>
+                          <TableHead>ACTIONS</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredTransactions.map((transaction) => (
+                          <TableRow key={transaction.orderId}>
+                            <TableCell className="font-medium">
+                              {transaction.orderId}
+                              <div className="text-xs text-muted-foreground">
+                                {transaction.cyrusOrderId}
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-medium text-green-600">
+                              ₹
+                              {parseFloat(transaction.openingBalance).toFixed(
+                                2
+                              )}
+                            </TableCell>
+                            <TableCell className="font-medium text-yellow-600">
+                              ₹{parseFloat(transaction.lockedAmount).toFixed(2)}
+                            </TableCell>
+                            <TableCell className="font-medium text-blue-600">
+                              ₹
+                              {parseFloat(transaction.chargedAmount).toFixed(2)}
+                            </TableCell>
+                            <TableCell>
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs ${
+                                  transaction.status.toLowerCase() ===
+                                  "completed"
+                                    ? "bg-green-100 text-green-800"
+                                    : transaction.status.toLowerCase() ===
+                                      "failed"
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-yellow-100 text-yellow-800"
+                                }`}
+                              >
+                                {transaction.status}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {transaction.rrnNumber}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleCheckStatus(transaction.orderId)
+                                }
+                                disabled={
+                                  checkingStatus === transaction.orderId
+                                }
+                              >
+                                {checkingStatus === transaction.orderId ? (
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  "Check Status"
+                                )}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    {/* Pagination */}
+                    <div className="flex items-center justify-between py-4">
+                      <div className="text-sm text-muted-foreground">
+                        Showing {currentPage * pageSize + 1} to{" "}
+                        {Math.min((currentPage + 1) * pageSize, totalElements)}{" "}
+                        of {totalElements} entries
+                      </div>
+                      <div>
+                        <nav>
+                          <ul className="flex items-center gap-1">
+                            <li>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() =>
+                                  currentPage > 0 &&
+                                  handlePageChange(currentPage - 1)
+                                }
+                                disabled={currentPage === 0}
+                              >
+                                &lt;
+                              </Button>
+                            </li>
+                            {totalPages <= 5
+                              ? Array.from({ length: totalPages }, (_, i) => (
+                                  <li key={i}>
+                                    <Button
+                                      variant={
+                                        currentPage === i ? "default" : "ghost"
+                                      }
+                                      size="icon"
+                                      onClick={() => handlePageChange(i)}
+                                    >
+                                      {i + 1}
+                                    </Button>
+                                  </li>
+                                ))
+                              : Array.from({ length: 5 }, (_, i) => {
+                                  let pageNum;
+                                  if (currentPage < 2) {
+                                    pageNum = i;
+                                  } else if (currentPage >= totalPages - 2) {
+                                    pageNum = totalPages - 5 + i;
+                                  } else {
+                                    pageNum = currentPage - 2 + i;
+                                  }
+                                  if (pageNum >= 0 && pageNum < totalPages) {
+                                    return (
+                                      <li key={pageNum}>
+                                        <Button
+                                          variant={
+                                            currentPage === pageNum
+                                              ? "default"
+                                              : "ghost"
+                                          }
+                                          size="icon"
+                                          onClick={() =>
+                                            handlePageChange(pageNum)
+                                          }
+                                        >
+                                          {pageNum + 1}
+                                        </Button>
+                                      </li>
+                                    );
+                                  }
+                                  return null;
+                                })}
+                            <li>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() =>
+                                  currentPage < totalPages - 1 &&
+                                  handlePageChange(currentPage + 1)
+                                }
+                                disabled={currentPage === totalPages - 1}
+                              >
+                                &gt;
+                              </Button>
+                            </li>
+                          </ul>
+                        </nav>
+                      </div>
+                    </div>
+                  </>
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-muted-foreground">

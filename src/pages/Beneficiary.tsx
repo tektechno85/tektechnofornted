@@ -170,7 +170,7 @@ const Beneficiary = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
-  const pageSize = 10;
+  const [pageSize] = useState(10);
   const [selectedBeneficiaryDetails, setSelectedBeneficiaryDetails] =
     useState<Beneficiary | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -195,7 +195,6 @@ const Beneficiary = () => {
       if (res.payload) {
         setBeneficiaries(res.payload.beneficiaries || []);
         setTotalPages(res.payload.totalPages || 0);
-        setCurrentPage(res.payload.pageNumber || 0);
         setTotalElements(res.payload.totalElements || 0);
       }
     } catch (error) {
@@ -814,57 +813,85 @@ const Beneficiary = () => {
               </div>
             </div>
             {!isLoading && beneficiaries.length > 0 && (
-              <div className="flex items-center justify-center py-4">
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (currentPage > 0)
-                            handlePageChange(currentPage - 1);
-                        }}
-                        aria-disabled={currentPage === 0}
-                        className={
-                          currentPage === 0
-                            ? "pointer-events-none opacity-50"
-                            : ""
-                        }
-                      />
-                    </PaginationItem>
-                    {[...Array(totalPages)].map((_, index) => (
-                      <PaginationItem key={index}>
-                        <PaginationLink
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handlePageChange(index);
-                          }}
-                          isActive={currentPage === index}
+              <div className="flex items-center justify-between py-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing {currentPage * pageSize + 1} to{" "}
+                  {Math.min((currentPage + 1) * pageSize, totalElements)} of{" "}
+                  {totalElements} entries
+                </div>
+                <div>
+                  <nav>
+                    <ul className="flex items-center gap-1">
+                      <li>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            currentPage > 0 && handlePageChange(currentPage - 1)
+                          }
+                          disabled={currentPage === 0}
                         >
-                          {index + 1}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
-                    <PaginationItem>
-                      <PaginationNext
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (currentPage < totalPages - 1)
-                            handlePageChange(currentPage + 1);
-                        }}
-                        aria-disabled={currentPage === totalPages - 1}
-                        className={
-                          currentPage === totalPages - 1
-                            ? "pointer-events-none opacity-50"
-                            : ""
-                        }
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
+                          &lt;
+                        </Button>
+                      </li>
+                      {totalPages <= 5
+                        ? Array.from({ length: totalPages }, (_, i) => (
+                            <li key={i}>
+                              <Button
+                                variant={
+                                  currentPage === i ? "default" : "ghost"
+                                }
+                                size="icon"
+                                onClick={() => handlePageChange(i)}
+                              >
+                                {i + 1}
+                              </Button>
+                            </li>
+                          ))
+                        : Array.from({ length: 5 }, (_, i) => {
+                            let pageNum;
+                            if (currentPage < 2) {
+                              pageNum = i;
+                            } else if (currentPage >= totalPages - 2) {
+                              pageNum = totalPages - 5 + i;
+                            } else {
+                              pageNum = currentPage - 2 + i;
+                            }
+                            if (pageNum >= 0 && pageNum < totalPages) {
+                              return (
+                                <li key={pageNum}>
+                                  <Button
+                                    variant={
+                                      currentPage === pageNum
+                                        ? "default"
+                                        : "ghost"
+                                    }
+                                    size="icon"
+                                    onClick={() => handlePageChange(pageNum)}
+                                  >
+                                    {pageNum + 1}
+                                  </Button>
+                                </li>
+                              );
+                            }
+                            return null;
+                          })}
+                      <li>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            currentPage < totalPages - 1 &&
+                            handlePageChange(currentPage + 1)
+                          }
+                          disabled={currentPage === totalPages - 1}
+                        >
+                          &gt;
+                        </Button>
+                      </li>
+                    </ul>
+                  </nav>
+                </div>
               </div>
             )}
           </CardContent>

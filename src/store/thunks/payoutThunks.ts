@@ -406,7 +406,23 @@ export const fetchTransactionDetails = createAsyncThunk(
       const res = await getAPI<{
         response: boolean;
         message: string;
-        data: any;
+        data: {
+          totalPages: number;
+          totalElements: number;
+          transactions: {
+            beneficiaryId: string;
+            chargedAmount: string;
+            createdAt: string;
+            cyrusId: string;
+            cyrusOrderId: string;
+            lockedAmount: string;
+            openingBalance: string;
+            orderId: string;
+            rrnNumber: string;
+            status: string;
+            updatedAt: string;
+          }[];
+        };
         status: string;
         timestamp: string;
       }>(

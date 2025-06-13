@@ -99,9 +99,7 @@ const Payout = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
-  // const { content: payouts, loading } = useSelector(
-  //   (state: RootState) => state.payout.allPayoutTransactions
-  // );
+  const [pageSize] = useState(10);
 
   const filteredPayouts =
     payouts?.filter((payout) => {
@@ -117,19 +115,23 @@ const Payout = () => {
 
   const FetchAllPayouts = async () => {
     setLoading(true);
-    const response = await dispatch(
-      fetchAllPayoutTransactions({
-        pageNumber: currentPage,
-        pageSize: 10,
-      }) as any
-    );
-    console.log({ response });
-    if (response.payload) {
-      setPayouts(response.payload.transactions);
-      setTotalPages(response.payload.totalPages);
-      setTotalElements(response.payload.totalElements);
+    try {
+      const response = await dispatch(
+        fetchAllPayoutTransactions({
+          pageNumber: currentPage,
+          pageSize: pageSize,
+        }) as any
+      );
+      if (response.payload) {
+        setPayouts(response.payload.transactions);
+        setTotalPages(response.payload.totalPages);
+        setTotalElements(response.payload.totalElements);
+      }
+    } catch (error) {
+      toast.error("Failed to fetch payouts");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleCheckStatus = async (orderId: string) => {
@@ -156,12 +158,11 @@ const Payout = () => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    FetchAllPayouts();
   };
 
   useEffect(() => {
     FetchAllPayouts();
-  }, []);
+  }, [currentPage]);
 
   return (
     <DashboardLayout>
@@ -429,57 +430,86 @@ const Payout = () => {
 
               {/* Pagination */}
               {!loading && filteredPayouts.length > 0 && (
-                <div className="flex items-center justify-center py-4">
-                  <Pagination>
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            if (currentPage > 0)
-                              handlePageChange(currentPage - 1);
-                          }}
-                          aria-disabled={currentPage === 0}
-                          className={
-                            currentPage === 0
-                              ? "pointer-events-none opacity-50"
-                              : ""
-                          }
-                        />
-                      </PaginationItem>
-                      {[...Array(totalPages)].map((_, index) => (
-                        <PaginationItem key={index}>
-                          <PaginationLink
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              handlePageChange(index);
-                            }}
-                            isActive={currentPage === index}
+                <div className="flex items-center justify-between py-4">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {currentPage * pageSize + 1} to{" "}
+                    {Math.min((currentPage + 1) * pageSize, totalElements)} of{" "}
+                    {totalElements} entries
+                  </div>
+                  <div>
+                    <nav>
+                      <ul className="flex items-center gap-1">
+                        <li>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              currentPage > 0 &&
+                              handlePageChange(currentPage - 1)
+                            }
+                            disabled={currentPage === 0}
                           >
-                            {index + 1}
-                          </PaginationLink>
-                        </PaginationItem>
-                      ))}
-                      <PaginationItem>
-                        <PaginationNext
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            if (currentPage < totalPages - 1)
-                              handlePageChange(currentPage + 1);
-                          }}
-                          aria-disabled={currentPage === totalPages - 1}
-                          className={
-                            currentPage === totalPages - 1
-                              ? "pointer-events-none opacity-50"
-                              : ""
-                          }
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
+                            &lt;
+                          </Button>
+                        </li>
+                        {totalPages <= 5
+                          ? Array.from({ length: totalPages }, (_, i) => (
+                              <li key={i}>
+                                <Button
+                                  variant={
+                                    currentPage === i ? "default" : "ghost"
+                                  }
+                                  size="icon"
+                                  onClick={() => handlePageChange(i)}
+                                >
+                                  {i + 1}
+                                </Button>
+                              </li>
+                            ))
+                          : Array.from({ length: 5 }, (_, i) => {
+                              let pageNum;
+                              if (currentPage < 2) {
+                                pageNum = i;
+                              } else if (currentPage >= totalPages - 2) {
+                                pageNum = totalPages - 5 + i;
+                              } else {
+                                pageNum = currentPage - 2 + i;
+                              }
+                              if (pageNum >= 0 && pageNum < totalPages) {
+                                return (
+                                  <li key={pageNum}>
+                                    <Button
+                                      variant={
+                                        currentPage === pageNum
+                                          ? "default"
+                                          : "ghost"
+                                      }
+                                      size="icon"
+                                      onClick={() => handlePageChange(pageNum)}
+                                    >
+                                      {pageNum + 1}
+                                    </Button>
+                                  </li>
+                                );
+                              }
+                              return null;
+                            })}
+                        <li>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              currentPage < totalPages - 1 &&
+                              handlePageChange(currentPage + 1)
+                            }
+                            disabled={currentPage === totalPages - 1}
+                          >
+                            &gt;
+                          </Button>
+                        </li>
+                      </ul>
+                    </nav>
+                  </div>
                 </div>
               )}
             </div>
