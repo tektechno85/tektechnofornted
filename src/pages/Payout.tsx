@@ -45,6 +45,7 @@ import {
 interface PayoutData {
   status: string;
   beneficiaryId: string;
+  beneficiaryName: string;
   orderId: string;
   cyrusOrderId: string;
   cyrusId: string;
@@ -306,7 +307,7 @@ const Payout = () => {
               </div>
 
               {/* Table */}
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -314,6 +315,8 @@ const Payout = () => {
                         <input type="checkbox" className="h-4 w-4" />
                       </TableHead>
                       <TableHead>ORDER ID</TableHead>
+                      <TableHead>BENEFICIARY ID</TableHead>
+                      <TableHead>BENEFICIARY NAME</TableHead>
                       <TableHead>OPENING BALANCE</TableHead>
                       <TableHead>LOCKED AMOUNT</TableHead>
                       <TableHead>CHARGED AMOUNT</TableHead>
@@ -331,6 +334,12 @@ const Payout = () => {
                           </TableCell>
                           <TableCell>
                             <Skeleton className="h-4 w-[120px]" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-[120px]" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-4 w-[150px]" />
                           </TableCell>
                           <TableCell>
                             <Skeleton className="h-4 w-[80px]" />
@@ -362,6 +371,16 @@ const Payout = () => {
                             {payout.orderId}
                             <div className="text-xs text-muted-foreground">
                               {payout.cyrusOrderId}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-mono text-sm">
+                              {payout.beneficiaryId}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium">
+                              {payout.beneficiaryName}
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
@@ -419,7 +438,7 @@ const Payout = () => {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8">
+                        <TableCell colSpan={10} className="text-center py-8">
                           No payouts found
                         </TableCell>
                       </TableRow>
