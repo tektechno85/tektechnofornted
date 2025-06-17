@@ -30,6 +30,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   fetchAllPayoutTransactions,
   checkPayoutStatus,
+  fetchBalance,
 } from "@/store/thunks/payoutThunks";
 import { toast } from "sonner";
 import dayjs from "dayjs";
@@ -82,6 +83,10 @@ interface RootState {
       content: PayoutData[] | null;
       loading: boolean;
     };
+    balance: {
+      value: number | null;
+      loading: boolean;
+    };
   };
 }
 
@@ -92,15 +97,15 @@ const Payout = () => {
   const [payouts, setPayouts] = useState<PayoutData[]>([]);
   const [loading, setLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState<string | null>(null);
-  const [statusResponse, setStatusResponse] = useState<StatusResponse | null>(
-    null
-  );
+  const [statusResponse, setStatusResponse] = useState<StatusResponse | null>(null);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const dispatch = useDispatch();
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize] = useState(10);
+  const [balance, setBalance] = useState<number | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState(false);
 
   const filteredPayouts =
     payouts?.filter((payout) => {
@@ -135,6 +140,26 @@ const Payout = () => {
     }
   };
 
+  const fetchBalanceData = async () => {
+    setBalanceLoading(true);
+    try {
+      const response = await dispatch(fetchBalance() as any);
+      if (response.payload) {
+        // Ensure the balance is a number by parsing it
+        const balanceValue = Number(response.payload);
+        if (isNaN(balanceValue)) {
+          throw new Error("Invalid balance value received");
+        }
+        setBalance(balanceValue);
+      }
+    } catch (error) {
+      toast.error("Failed to fetch balance");
+      setBalance(null);
+    } finally {
+      setBalanceLoading(false);
+    }
+  };
+
   const handleCheckStatus = async (orderId: string) => {
     setCheckingStatus(orderId);
     try {
@@ -163,6 +188,7 @@ const Payout = () => {
 
   useEffect(() => {
     FetchAllPayouts();
+    fetchBalanceData(); // Fetch balance when component mounts
   }, [currentPage]);
 
   return (
@@ -191,13 +217,12 @@ const Payout = () => {
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Status</p>
                   <span
-                    className={`px-2 py-1 rounded-full text-xs ${
-                      statusResponse.status.toLowerCase() === "completed"
-                        ? "bg-green-100 text-green-800"
-                        : statusResponse.status.toLowerCase() === "failed"
+                    className={`px-2 py-1 rounded-full text-xs ${statusResponse.status.toLowerCase() === "completed"
+                      ? "bg-green-100 text-green-800"
+                      : statusResponse.status.toLowerCase() === "failed"
                         ? "bg-red-100 text-red-800"
                         : "bg-yellow-100 text-yellow-800"
-                    }`}
+                      }`}
                   >
                     {statusResponse.status}
                   </span>
@@ -247,16 +272,30 @@ const Payout = () => {
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b">
         <div className="flex h-16 items-center justify-between py-4 px-6">
           <h1 className="text-xl font-semibold">Payouts</h1>
-          <Button
-            variant="outline"
-            onClick={FetchAllPayouts}
-            disabled={loading}
-          >
-            <RefreshCw
-              className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
-            />
-            {loading ? "Refreshing..." : "Refresh"}
-          </Button>
+          <div className="flex items-center gap-4">
+            <div className="text-sm">
+              {balanceLoading ? (
+                <Skeleton className="h-6 w-32" />
+              ) : (
+                <span className="font-medium">
+                  Current Balance: ₹{balance !== null ? balance.toFixed(2) : "0.00"}
+                </span>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => {
+                FetchAllPayouts();
+                fetchBalanceData(); // Refresh balance along with payouts
+              }}
+              disabled={loading || balanceLoading}
+            >
+              <RefreshCw
+                className={`h-4 w-4 mr-2 ${loading || balanceLoading ? "animate-spin" : ""}`}
+              />
+              {loading || balanceLoading ? "Refreshing..." : "Refresh"}
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -399,13 +438,12 @@ const Payout = () => {
                           </TableCell>
                           <TableCell>
                             <span
-                              className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                                payout.status === "SUCCESS"
-                                  ? "bg-green-50 text-green-700"
-                                  : payout.status === "FAILED"
+                              className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${payout.status === "SUCCESS"
+                                ? "bg-green-50 text-green-700"
+                                : payout.status === "FAILED"
                                   ? "bg-red-50 text-red-700"
                                   : "bg-yellow-50 text-yellow-700"
-                              }`}
+                                }`}
                             >
                               {payout.status}
                             </span>
@@ -468,51 +506,50 @@ const Payout = () => {
                             }
                             disabled={currentPage === 0}
                           >
-                            &lt;
                           </Button>
                         </li>
                         {totalPages <= 5
                           ? Array.from({ length: totalPages }, (_, i) => (
-                              <li key={i}>
-                                <Button
-                                  variant={
-                                    currentPage === i ? "default" : "ghost"
-                                  }
-                                  size="icon"
-                                  onClick={() => handlePageChange(i)}
-                                >
-                                  {i + 1}
-                                </Button>
-                              </li>
-                            ))
+                            <li key={i}>
+                              <Button
+                                variant={
+                                  currentPage === i ? "default" : "ghost"
+                                }
+                                size="icon"
+                                onClick={() => handlePageChange(i)}
+                              >
+                                {i + 1}
+                              </Button>
+                            </li>
+                          ))
                           : Array.from({ length: 5 }, (_, i) => {
-                              let pageNum;
-                              if (currentPage < 2) {
-                                pageNum = i;
-                              } else if (currentPage >= totalPages - 2) {
-                                pageNum = totalPages - 5 + i;
-                              } else {
-                                pageNum = currentPage - 2 + i;
-                              }
-                              if (pageNum >= 0 && pageNum < totalPages) {
-                                return (
-                                  <li key={pageNum}>
-                                    <Button
-                                      variant={
-                                        currentPage === pageNum
-                                          ? "default"
-                                          : "ghost"
-                                      }
-                                      size="icon"
-                                      onClick={() => handlePageChange(pageNum)}
-                                    >
-                                      {pageNum + 1}
-                                    </Button>
-                                  </li>
-                                );
-                              }
-                              return null;
-                            })}
+                            let pageNum;
+                            if (currentPage < 2) {
+                              pageNum = i;
+                            } else if (currentPage >= totalPages - 2) {
+                              pageNum = totalPages - 5 + i;
+                            } else {
+                              pageNum = currentPage - 2 + i;
+                            }
+                            if (pageNum >= 0 && pageNum < totalPages) {
+                              return (
+                                <li key={pageNum}>
+                                  <Button
+                                    variant={
+                                      currentPage === pageNum
+                                        ? "default"
+                                        : "ghost"
+                                    }
+                                    size="icon"
+                                    onClick={() => handlePageChange(pageNum)}
+                                  >
+                                    {pageNum + 1}
+                                  </Button>
+                                </li>
+                              );
+                            }
+                            return null;
+                          })}
                         <li>
                           <Button
                             variant="ghost"
@@ -523,7 +560,6 @@ const Payout = () => {
                             }
                             disabled={currentPage === totalPages - 1}
                           >
-                            &gt;
                           </Button>
                         </li>
                       </ul>

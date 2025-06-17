@@ -164,6 +164,7 @@ interface BulkUploadResponse {
 //     }
 //   }
 // );
+
 export const bulkUploadBeneficiaries = createAsyncThunk(
   "payout/bulkUploadBeneficiaries",
   async (
@@ -496,6 +497,35 @@ export const fetchAllPayoutTransactions = createAsyncThunk(
         totalElements: res.data.totalElements,
         totalPages: res.data.totalPages,
       };
+    } catch (error) {
+      return rejectWithValue((error as Error).message);
+    }
+  }
+);
+
+export const fetchBalance = createAsyncThunk(
+  "payout/fetchBalance",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await getAPI<{
+        response: boolean;
+        message: string;
+        data: Array<{
+          Status: string;
+          SuccessMessage: string;
+          data: Array<{
+            balance: number;
+          }>;
+        }>;
+        status: string;
+        timestamp: string;
+      }>("/balance/get-balance");
+
+      if (!res.response) {
+        throw new Error(res.message || "Failed to fetch balance");
+      }
+
+      return res.data[0].data[0].balance;
     } catch (error) {
       return rejectWithValue((error as Error).message);
     }
