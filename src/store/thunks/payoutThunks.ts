@@ -102,69 +102,6 @@ interface BulkUploadResponse {
   }>;
 }
 
-// Add the bulk upload thunk
-// export const bulkUploadBeneficiaries = createAsyncThunk(
-//   "payout/bulkUploadBeneficiaries",
-//   async (
-//     {
-//       file,
-//       beneficiaryData,
-//     }: {
-//       file: File;
-//       beneficiaryData: {
-//         beneficiaryName: string;
-//         beneficiaryMobileNumber: string;
-//         beneficiaryEmail: string;
-//         beneficiaryPanNumber: string;
-//         beneficiaryAadhaarNumber: string;
-//         beneficiaryAddress: string;
-//         beneficiaryBankName: string;
-//         beneficiaryAccountNumber: string;
-//         beneficiaryIfscCode: string;
-//         beneType: string;
-//         latitude: number;
-//         longitude: number;
-//         address: {
-//           line: string;
-//           area: string;
-//           city: string;
-//           district: string;
-//           state: string;
-//           pincode: string;
-//         };
-//       };
-//     },
-//     { rejectWithValue }
-//   ) => {
-//     try {
-//       const formData = new FormData();
-//       formData.append("file", file);
-//       formData.append("beneficiaryData", JSON.stringify(beneficiaryData));
-
-//       const response = await fetch(
-//         getApiUrl("/payout/beneficiaries/bulk-upload"),
-//         {
-//           method: "POST",
-//           body: formData,
-//           headers: {
-//             Authorization: `Bearer ${localStorage.getItem("token")}`,
-//           },
-//         }
-//       );
-
-//       if (!response.ok) {
-//         const errorData = await response.json().catch(() => null);
-//         throw new Error(errorData?.message || "Failed to upload beneficiaries");
-//       }
-
-//       const data = await response.json();
-//       return data as BulkUploadResponse;
-//     } catch (error) {
-//       return rejectWithValue((error as Error).message);
-//     }
-//   }
-// );
-
 export const bulkUploadBeneficiaries = createAsyncThunk(
   "payout/bulkUploadBeneficiaries",
   async (
@@ -510,22 +447,16 @@ export const fetchBalance = createAsyncThunk(
       const res = await getAPI<{
         response: boolean;
         message: string;
-        data: Array<{
-          Status: string;
-          SuccessMessage: string;
-          data: Array<{
-            balance: number;
-          }>;
-        }>;
+        data: number;
         status: string;
         timestamp: string;
-      }>("/balance/get-balance");
+      }>("/wallet-balance/get");
 
       if (!res.response) {
         throw new Error(res.message || "Failed to fetch balance");
       }
 
-      return res.data[0].data[0].balance;
+      return res.data;
     } catch (error) {
       return rejectWithValue((error as Error).message);
     }
