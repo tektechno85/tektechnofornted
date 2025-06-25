@@ -56,15 +56,12 @@ interface ExcelRowData {
   "Source Narration": string;
   "Target Narration": string;
   "Customer Ref No": string;
+  "Pan No": string;
 }
 
 interface BeneficiaryFormData {
   id?: string | number;
-  beneficiaryMobileNumber: string;
-  beneficiaryEmail: string;
-  beneficiaryPanNumber: string;
   beneficiaryAadhaarNumber: string;
-  beneficiaryAddress: string;
   beneficiaryBankName: string;
   beneType: string;
   latitude: number;
@@ -80,14 +77,8 @@ interface BeneficiaryFormData {
 }
 
 interface FormErrors {
-  beneficiaryName?: string;
-  beneficiaryMobileNumber?: string;
-  beneficiaryEmail?: string;
-  beneficiaryPanNumber?: string;
   beneficiaryAadhaarNumber?: string;
   beneficiaryBankName?: string;
-  beneficiaryAccountNumber?: string;
-  beneficiaryIfscCode?: string;
   address?: {
     line?: string;
     area?: string;
@@ -99,11 +90,7 @@ interface FormErrors {
 }
 
 const initialFormData: BeneficiaryFormData = {
-  beneficiaryMobileNumber: "",
-  beneficiaryEmail: "",
-  beneficiaryPanNumber: "",
   beneficiaryAadhaarNumber: "",
-  beneficiaryAddress: "",
   beneficiaryBankName: "",
   beneType: "CUSTOMER",
   latitude: 0,
@@ -124,6 +111,16 @@ const beneficiaryTypes = [
   { ID: 3, PAY_TYPE: "EMPLOYEE" },
 ];
 
+const requiredColumns = [
+  "Transaction Type",
+  "Beneficiary A/c No.",
+  "IFSC Code",
+  "Beneficiary Name",
+  "Pan No",
+  "Beneficiary Mobile No",
+  "Beneficiary Email ID"
+];
+
 const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
   isOpen,
   onClose,
@@ -139,11 +136,11 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
   const [showPreview, setShowPreview] = useState(false);
   const [viewLastFive, setViewLastFive] = useState(false);
   const [totalRows, setTotalRows] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [formData, setFormData] =
-    useState<BeneficiaryFormData>(initialFormData);
+  const [formData, setFormData] = useState<BeneficiaryFormData>(initialFormData);
   const [errors, setErrors] = useState<FormErrors>({});
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -156,21 +153,18 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
+    
+    // Clear error when user starts typing
+    if (errors[name as keyof FormErrors]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }));
+    }
   };
-
-  const requiredColumns = [
-    "Transaction Type",
-    "Beneficiary A/c No.",
-    "IFSC Code",
-    "Beneficiary Name",
-  ];
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       if (
-        file.type !==
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" &&
+        file.type !== "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" &&
         file.type !== "application/vnd.ms-excel"
       ) {
         toast.error("Please select a valid Excel file (.xlsx or .xls)");
@@ -203,9 +197,7 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
     reader.readAsArrayBuffer(file);
   };
 
-  const validateExcelData = (
-    data: ExcelRowData[]
-  ): { isValid: boolean; errors: string[] } => {
+  const validateExcelData = (data: ExcelRowData[]): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
 
     if (data.length === 0) {
@@ -214,16 +206,14 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
     }
 
     const firstRow = data[0];
-    console.log(firstRow, "firstRow");
     const missingColumns = requiredColumns.filter((col) => !(col in firstRow));
-    console.log(missingColumns, "missingColumns");
+    
     if (missingColumns.length > 0) {
       errors.push(`Missing required columns: ${missingColumns.join(", ")}`);
     }
 
-    // Additional validation
+    // Additional validation for each row
     data.forEach((row, index) => {
-      console.log("data loop");
       if (!row["Beneficiary Name"] || row["Beneficiary Name"].trim() === "") {
         errors.push(`Row ${index + 1}: Beneficiary Name is required`);
       }
@@ -240,8 +230,50 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
     return { isValid: errors.length === 0, errors };
   };
 
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    // Aadhaar validation
+    if (!formData.beneficiaryAadhaarNumber || formData.beneficiaryAadhaarNumber.length !== 12) {
+      newErrors.beneficiaryAadhaarNumber = "Aadhaar number must be 12 digits";
+    }
+
+    // Bank details validation
+    if (!formData.beneficiaryBankName.trim()) {
+      newErrors.beneficiaryBankName = "Bank name is required";
+    }
+
+    // Address validation
+    const addressErrors: FormErrors['address'] = {};
+    
+    if (!formData.address.line.trim()) {
+      addressErrors.line = "Address line is required";
+    }
+    if (!formData.address.area.trim()) {
+      addressErrors.area = "Area is required";
+    }
+    if (!formData.address.city.trim()) {
+      addressErrors.city = "City is required";
+    }
+    if (!formData.address.district.trim()) {
+      addressErrors.district = "District is required";
+    }
+    if (!formData.address.state.trim()) {
+      addressErrors.state = "State is required";
+    }
+    if (!formData.address.pincode.match(/^[0-9]{6}$/)) {
+      addressErrors.pincode = "Pincode must be 6 digits";
+    }
+
+    if (Object.keys(addressErrors).length > 0) {
+      newErrors.address = addressErrors;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleUpload = async () => {
-    console.log("handle upload");
     if (!selectedFile) {
       toast.error("Please select a file first");
       return;
@@ -253,21 +285,14 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
       return;
     }
 
-    console.log("validation start");
-
     const validation = validateExcelData(previewData);
-    console.log(validation, "validation");
     if (!validation.isValid) {
       toast.error(`Validation failed: ${validation.errors[0]}`);
       return;
     }
 
-    console.log("all validation checked succesfull");
-
     try {
-      console.log("checking");
-
-      const result = await dispatch(
+      await dispatch(
         bulkUploadBeneficiaries({
           file: selectedFile,
           beneficiaryData: formData,
@@ -281,8 +306,6 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
           },
         })
       ).unwrap();
-
-      console.log({ result }, "result");
     } catch (error) {
       console.error("Upload error:", error);
       toast.error(typeof error === "string" ? error : "Failed to upload file");
@@ -295,76 +318,12 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
     setShowPreview(false);
     setViewLastFive(false);
     setTotalRows(0);
+    setFormData(initialFormData);
+    setErrors({});
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
     onClose();
-  };
-  const validateForm = () => {
-    const newErrors: FormErrors = {};
-
-    // Mobile validation
-    // const mobileRegex = /^[0-9]{10}$/;
-    // if (!mobileRegex.test(formData.beneficiaryMobileNumber)) {
-    //   newErrors.beneficiaryMobileNumber = "Mobile number should be 10 digits";
-    // }
-
-    // Email validation if provided
-    // if (formData.beneficiaryEmail) {
-    //   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    //   if (!emailRegex.test(formData.beneficiaryEmail)) {
-    //     newErrors.beneficiaryEmail = "Invalid email format";
-    //   }
-    // }
-
-    // PAN validation
-    // const panRegex = /[A-Z]{5}[0-9]{4}[A-Z]{1}/;
-    // if (!panRegex.test(formData.beneficiaryPanNumber)) {
-    //   newErrors.beneficiaryPanNumber =
-    //     "Invalid PAN format. Should be like ABCDE1234F";
-    // }
-
-    // Aadhaar validation
-    if (formData.beneficiaryAadhaarNumber.length !== 12) {
-      newErrors.beneficiaryAadhaarNumber = "Aadhaar number must be 12 digits";
-    }
-
-    // Bank details validation
-    if (!formData.beneficiaryBankName.trim()) {
-      newErrors.beneficiaryBankName = "Bank name is required";
-    }
-    
-    // Address validation with specific error messages
-    if (!formData.address.line.trim()) {
-      newErrors.address = {
-        ...newErrors.address,
-        line: "Address line is required",
-      };
-    }
-    if (!formData.address.area.trim()) {
-      newErrors.address = { ...newErrors.address, area: "Area is required" };
-    }
-    if (!formData.address.city.trim()) {
-      newErrors.address = { ...newErrors.address, city: "City is required" };
-    }
-    if (!formData.address.district.trim()) {
-      newErrors.address = {
-        ...newErrors.address,
-        district: "District is required",
-      };
-    }
-    if (!formData.address.state.trim()) {
-      newErrors.address = { ...newErrors.address, state: "State is required" };
-    }
-    if (!formData.address.pincode.match(/^[0-9]{6}$/)) {
-      newErrors.address = {
-        ...newErrors.address,
-        pincode: "Invalid pincode format",
-      };
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
   const downloadTemplate = () => {
@@ -386,6 +345,7 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
         "Source Narration": "",
         "Target Narration": "",
         "Customer Ref No": "28759",
+        "Pan No": "SFFPD4041B"
       },
       {
         "Transaction Amount": "25000",
@@ -404,6 +364,7 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
         "Source Narration": "",
         "Target Narration": "",
         "Customer Ref No": "28760",
+        "Pan No": "SFFPD4041C"
       },
     ];
 
@@ -415,12 +376,7 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
 
   const getDisplayData = () => {
     if (!showPreview || previewData.length === 0) return [];
-
-    if (viewLastFive) {
-      return previewData.slice(-5);
-    } else {
-      return previewData.slice(0, 5);
-    }
+    return viewLastFive ? previewData.slice(-5) : previewData.slice(0, 5);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -439,8 +395,7 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
     const file = e.dataTransfer.files[0];
     if (file) {
       if (
-        file.type !==
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" &&
+        file.type !== "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" &&
         file.type !== "application/vnd.ms-excel"
       ) {
         toast.error("Please select a valid Excel file (.xlsx or .xls)");
@@ -450,6 +405,8 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
       previewExcelFile(file);
     }
   };
+
+  const displayData = getDisplayData();
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -502,12 +459,7 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
               onDrop={handleDrop}
             >
               <div className="flex flex-col items-center justify-center gap-4">
-                <div
-                  className={cn(
-                    "p-4 rounded-full",
-                    selectedFile ? "bg-indigo-100" : "bg-indigo-100"
-                  )}
-                >
+                <div className="p-4 rounded-full bg-indigo-100">
                   {selectedFile ? (
                     <FileSpreadsheet className="h-8 w-8 text-indigo-600" />
                   ) : (
@@ -556,6 +508,58 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
             </div>
           </div>
 
+          {/* Data Preview */}
+          {showPreview && displayData.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold">Data Preview</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setViewLastFive(false)}
+                    className={!viewLastFive ? "bg-blue-50" : ""}
+                  >
+                    First 5
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setViewLastFive(true)}
+                    className={viewLastFive ? "bg-blue-50" : ""}
+                  >
+                    Last 5
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="border rounded-lg overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Beneficiary Name</th>
+                      <th className="px-4 py-2 text-left">Account No.</th>
+                      <th className="px-4 py-2 text-left">IFSC Code</th>
+                      <th className="px-4 py-2 text-left">Mobile No.</th>
+                      <th className="px-4 py-2 text-left">Email</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displayData.map((row, index) => (
+                      <tr key={index} className="border-t">
+                        <td className="px-4 py-2">{row["Beneficiary Name"]}</td>
+                        <td className="px-4 py-2">{row["Beneficiary A/c No."]}</td>
+                        <td className="px-4 py-2">{row["IFSC Code"]}</td>
+                        <td className="px-4 py-2">{row["Beneficiary Mobile No"]}</td>
+                        <td className="px-4 py-2">{row["Beneficiary Email ID"]}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* Required Fields Alert */}
           <Alert className="bg-amber-50 border-amber-200">
             <AlertCircle className="h-4 w-4 text-indigo-600" />
@@ -563,232 +567,176 @@ const BulkBeneficiaryUpload: React.FC<BulkBeneficiaryUploadProps> = ({
               <strong>Required columns:</strong> {requiredColumns.join(", ")}
             </AlertDescription>
           </Alert>
-        </div>
-        <form className="space-y-6 py-4">
-          {/* Beneficiary Form */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Personal Information */}
-            {/* <div className="space-y-2">
-              <Label htmlFor="beneficiaryMobileNumber">Mobile Number *</Label>
-              <Input
-                id="beneficiaryMobileNumber"
-                name="beneficiaryMobileNumber"
-                value={formData.beneficiaryMobileNumber}
-                onChange={handleInputChange}
-                required
-                maxLength={10}
-                minLength={10}
-                pattern="[0-9]{10}"
-                placeholder="e.g. 9876543210"
-                className={
-                  errors.beneficiaryMobileNumber ? "border-red-500" : ""
-                }
-              />
-              {errors.beneficiaryMobileNumber && (
-                <p className="text-sm text-red-500">
-                  {errors.beneficiaryMobileNumber}
-                </p>
-              )}
-            </div> */}
-            {/* <div className="space-y-2">
-              <Label htmlFor="beneficiaryEmail">Email</Label>
-              <Input
-                id="beneficiaryEmail"
-                name="beneficiaryEmail"
-                type="email"
-                placeholder="e.g. beneficiary@gmail.com"
-                value={formData.beneficiaryEmail}
-                onChange={handleInputChange}
-                pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-                className={errors.beneficiaryEmail ? "border-red-500" : ""}
-              />
-              {errors.beneficiaryEmail && (
-                <p className="text-sm text-red-500">
-                  {errors.beneficiaryEmail}
-                </p>
-              )}
-            </div> */}
-            {/* <div className="space-y-2">
-              <Label htmlFor="beneficiaryPanNumber">PAN Number *</Label>
-              <Input
-                id="beneficiaryPanNumber"
-                name="beneficiaryPanNumber"
-                value={formData.beneficiaryPanNumber}
-                onChange={handleInputChange}
-                placeholder="e.g. HDGFJ1234H"
-                className={`capitalize ${
-                  errors.beneficiaryPanNumber ? "border-red-500" : ""
-                }`}
-                required
-              />
-              {errors.beneficiaryPanNumber && (
-                <p className="text-sm text-red-500">
-                  {errors.beneficiaryPanNumber}
-                </p>
-              )}
-            </div> */}
-            <div className="space-y-2">
-              <Label htmlFor="beneficiaryAadhaarNumber">Aadhaar Number *</Label>
-              <Input
-                id="beneficiaryAadhaarNumber"
-                name="beneficiaryAadhaarNumber"
-                value={formData.beneficiaryAadhaarNumber}
-                onChange={handleInputChange}
-                required
-                type="number"
-                maxLength={12}
-                minLength={12}
-                pattern="[0-9]{12}"
-                placeholder="e.g. 123456789012"
-                className={
-                  errors.beneficiaryAadhaarNumber ? "border-red-500" : ""
-                }
-              />
-              {errors.beneficiaryAadhaarNumber && (
-                <p className="text-sm text-red-500">
-                  {errors.beneficiaryAadhaarNumber}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="beneType">Beneficiary Type *</Label>
-              <Select
-                value={formData.beneType}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, beneType: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {beneficiaryTypes.map((type) => (
-                    <SelectItem key={type.ID} value={type.PAY_TYPE}>
-                      {type.PAY_TYPE}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
-            {/* Bank Details */}
-            <div className="space-y-2">
-              <Label htmlFor="beneficiaryBankName">Bank Name *</Label>
-              <Input
-                id="beneficiaryBankName"
-                name="beneficiaryBankName"
-                value={formData.beneficiaryBankName}
-                onChange={handleInputChange}
-                required
-                className={errors.beneficiaryBankName ? "border-red-500" : ""}
-              />
-              {errors.beneficiaryBankName && (
-                <p className="text-sm text-red-500">
-                  {errors.beneficiaryBankName}
-                </p>
-              )}
-            </div>
-            {/* Address Details */}
-            <div className="col-span-full">
-              <h3 className="text-lg font-medium mb-4">Address Details</h3>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address.line">Address Line *</Label>
-              <Input
-                id="address.line"
-                name="address.line"
-                value={formData.address.line}
-                onChange={handleInputChange}
-                required
-                placeholder="e.g. 123, Main Street"
-                className={errors.address?.line ? "border-red-500" : ""}
-              />
-              {errors.address?.line && (
-                <p className="text-sm text-red-500">{errors.address.line}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address.area">Area *</Label>
-              <Input
-                id="address.area"
-                name="address.area"
-                value={formData.address.area}
-                onChange={handleInputChange}
-                required
-                placeholder="e.g. New York"
-                className={errors.address?.area ? "border-red-500" : ""}
-              />
-              {errors.address?.area && (
-                <p className="text-sm text-red-500">{errors.address.area}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address.city">City *</Label>
-              <Input
-                id="address.city"
-                name="address.city"
-                value={formData.address.city}
-                onChange={handleInputChange}
-                required
-                placeholder="e.g. New York"
-                className={errors.address?.city ? "border-red-500" : ""}
-              />
-              {errors.address?.city && (
-                <p className="text-sm text-red-500">{errors.address.city}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address.district">District *</Label>
-              <Input
-                id="address.district"
-                name="address.district"
-                value={formData.address.district}
-                onChange={handleInputChange}
-                required
-                placeholder="e.g. New York"
-                className={errors.address?.district ? "border-red-500" : ""}
-              />
-              {errors.address?.district && (
-                <p className="text-sm text-red-500">
-                  {errors.address.district}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address.state">State *</Label>
-              <Input
-                id="address.state"
-                name="address.state"
-                value={formData.address.state}
-                onChange={handleInputChange}
-                required
-                placeholder="e.g. New York"
-                className={errors.address?.state ? "border-red-500" : ""}
-              />
-              {errors.address?.state && (
-                <p className="text-sm text-red-500">{errors.address.state}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address.pincode">Pincode *</Label>
-              <Input
-                id="address.pincode"
-                name="address.pincode"
-                value={formData.address.pincode}
-                onChange={handleInputChange}
-                required
-                maxLength={6}
-                minLength={6}
-                pattern="[0-9]{6}"
-                placeholder="e.g. 123456"
-                className={errors.address?.pincode ? "border-red-500" : ""}
-              />
-              {errors.address?.pincode && (
-                <p className="text-sm text-red-500">{errors.address.pincode}</p>
-              )}
+          {/* Beneficiary Form */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold">Beneficiary Details</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="beneficiaryAadhaarNumber">Aadhaar Number *</Label>
+                <Input
+                  id="beneficiaryAadhaarNumber"
+                  name="beneficiaryAadhaarNumber"
+                  value={formData.beneficiaryAadhaarNumber}
+                  onChange={handleInputChange}
+                  required
+                  type="number"
+                  maxLength={12}
+                  placeholder="e.g. 123456789012"
+                  className={errors.beneficiaryAadhaarNumber ? "border-red-500" : ""}
+                />
+                {errors.beneficiaryAadhaarNumber && (
+                  <p className="text-sm text-red-500">
+                    {errors.beneficiaryAadhaarNumber}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="beneType">Beneficiary Type *</Label>
+                <Select
+                  value={formData.beneType}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, beneType: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {beneficiaryTypes.map((type) => (
+                      <SelectItem key={type.ID} value={type.PAY_TYPE}>
+                        {type.PAY_TYPE}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2 col-span-full">
+                <Label htmlFor="beneficiaryBankName">Bank Name *</Label>
+                <Input
+                  id="beneficiaryBankName"
+                  name="beneficiaryBankName"
+                  value={formData.beneficiaryBankName}
+                  onChange={handleInputChange}
+                  required
+                  className={errors.beneficiaryBankName ? "border-red-500" : ""}
+                />
+                {errors.beneficiaryBankName && (
+                  <p className="text-sm text-red-500">
+                    {errors.beneficiaryBankName}
+                  </p>
+                )}
+              </div>
+
+              {/* Address Details */}
+              <div className="col-span-full">
+                <h4 className="text-base font-medium mb-4">Address Details</h4>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="address.line">Address Line *</Label>
+                <Input
+                  id="address.line"
+                  name="address.line"
+                  value={formData.address.line}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g. 123, Main Street"
+                  className={errors.address?.line ? "border-red-500" : ""}
+                />
+                {errors.address?.line && (
+                  <p className="text-sm text-red-500">{errors.address.line}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address.area">Area *</Label>
+                <Input
+                  id="address.area"
+                  name="address.area"
+                  value={formData.address.area}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g. Downtown"
+                  className={errors.address?.area ? "border-red-500" : ""}
+                />
+                {errors.address?.area && (
+                  <p className="text-sm text-red-500">{errors.address.area}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address.city">City *</Label>
+                <Input
+                  id="address.city"
+                  name="address.city"
+                  value={formData.address.city}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g. Mumbai"
+                  className={errors.address?.city ? "border-red-500" : ""}
+                />
+                {errors.address?.city && (
+                  <p className="text-sm text-red-500">{errors.address.city}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address.district">District *</Label>
+                <Input
+                  id="address.district"
+                  name="address.district"
+                  value={formData.address.district}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g. Mumbai"
+                  className={errors.address?.district ? "border-red-500" : ""}
+                />
+                {errors.address?.district && (
+                  <p className="text-sm text-red-500">
+                    {errors.address.district}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address.state">State *</Label>
+                <Input
+                  id="address.state"
+                  name="address.state"
+                  value={formData.address.state}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g. Maharashtra"
+                  className={errors.address?.state ? "border-red-500" : ""}
+                />
+                {errors.address?.state && (
+                  <p className="text-sm text-red-500">{errors.address.state}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address.pincode">Pincode *</Label>
+                <Input
+                  id="address.pincode"
+                  name="address.pincode"
+                  value={formData.address.pincode}
+                  onChange={handleInputChange}
+                  required
+                  maxLength={6}
+                  pattern="[0-9]{6}"
+                  placeholder="e.g. 400001"
+                  className={errors.address?.pincode ? "border-red-500" : ""}
+                />
+                {errors.address?.pincode && (
+                  <p className="text-sm text-red-500">{errors.address.pincode}</p>
+                )}
+              </div>
             </div>
           </div>
-        </form>
+        </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={handleClose} disabled={loading}>
