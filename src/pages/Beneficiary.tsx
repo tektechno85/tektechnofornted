@@ -7,21 +7,15 @@ import {
 } from "@/components/ui/card";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useDispatch } from "react-redux";
-import {
-  addBeneficiary,
-  fetchBeneficiaryList,
-} from "@/store/thunks/payoutThunks";
+import { fetchBeneficiaryList } from "@/store/thunks/payoutThunks";
 import { useEffect, useState } from "react";
 import {
   Search,
   Download,
-  ChevronDown,
-  X,
   Pencil,
   MoreHorizontal,
   ExternalLink,
   Send,
-  IndianRupee,
   UserPlus,
   Users,
   Info,
@@ -75,26 +69,10 @@ import { toast } from "sonner";
 import AddBeneficiaryModal from "@/components/beneficiary/AddBeneficiaryModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { SendMoneyDialog } from "@/components/beneficiary/SendMoneyDialog";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 import BulkBeneficiaryUpload from "./BulkBeneficiaryUpload";
 
 interface Beneficiary {
@@ -270,23 +248,6 @@ const Beneficiary = () => {
     setSelectedBeneficiaryDetails(beneficiary);
     setIsDetailsModalOpen(true);
   };
-
-  const filteredBeneficiaries = beneficiaries.filter((beneficiary) => {
-    const matchesSearch =
-      beneficiary.beneficiaryName
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      beneficiary.beneficiaryId
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      beneficiary.beneficiaryMobileNumber.includes(searchQuery);
-    const matchesType =
-      filterType === "all" || filterType === beneficiary.beneType.toLowerCase();
-    const matchesStatus =
-      statusFilter === "all" ||
-      (statusFilter === "active" ? beneficiary.status : !beneficiary.status);
-    return matchesSearch && matchesType && matchesStatus;
-  });
 
   return (
     <DashboardLayout>

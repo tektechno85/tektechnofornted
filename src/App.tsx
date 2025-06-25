@@ -15,6 +15,7 @@ import Payout from "@/pages/Payout";
 import Beneficiary from "@/pages/Beneficiary";
 import Transactions from "@/pages/Transactions";
 import NotFound from "@/pages/NotFound";
+import BulkPayment from "@/pages/BulkPayment";
 
 function App() {
   return (
@@ -53,6 +54,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Transactions />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/bulk-payment"
+              element={
+                <ProtectedRoute>
+                  <BulkPayment />
                 </ProtectedRoute>
               }
             />

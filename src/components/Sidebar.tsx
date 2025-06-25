@@ -1,21 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import {
-  LayoutDashboard,
-  // Link as LinkIcon,
-  // Newspaper,
-  // CreditCard,
-  RefreshCcw,
-  Users2,
-  // ShieldCheck,
-  // Store,
-  // Settings,
-  // Users,
-  // MessageSquare,
-  // Percent,
-  // Search,
-  // Globe,
-  // FileText
-} from "lucide-react";
+import { LayoutDashboard, RefreshCcw, Users2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigationItems = [
@@ -28,35 +12,9 @@ const navigationItems = [
     items: [
       { name: "Payouts", icon: RefreshCcw, href: "/payouts" },
       { name: "Beneficiaries", icon: Users2, href: "/beneficiaries" },
-      // { name: "Payment Links", icon: LinkIcon, href: "/payment-links" },
-      // { name: "Smart Pages", icon: Newspaper, href: "/smart-pages" },
-      // { name: "Payments", icon: CreditCard, href: "/payments" },
-      // { name: "Refunds", icon: RefreshCcw, href: "/refunds" },
-      // { name: "Resolution Center", icon: ShieldCheck, href: "/resolution" },
-      // { name: "Spends", icon: CreditCard, href: "/spends" },
-      // { name: "Shipping", icon: Globe, href: "/shipping" },
-      // { name: "API & Plugins", icon: Settings, href: "/api-plugins" },
-      // { name: "Reseller", icon: Users, href: "/reseller" },
+      { name: "Bulk Payment", icon: RefreshCcw, href: "/bulk-payment" },
     ],
   },
-  // {
-  //   section: "ONLINE STORE",
-  //   items: [
-  //     { name: "Products", icon: Store, href: "/products" },
-  //     { name: "Store Setup", icon: Settings, href: "/store-setup" },
-  //     { name: "Orders", icon: FileText, href: "/orders" },
-  //   ]
-  // },
-  // {
-  //   section: "MARKETING",
-  //   items: [
-  //     { name: "Customers", icon: Users, href: "/customers" },
-  //     { name: "Campaigns", icon: MessageSquare, href: "/campaigns" },
-  //     { name: "Discounts", icon: Percent, href: "/discounts" },
-  //     { name: "SEO", icon: Search, href: "/seo" },
-  //     { name: "Social Post", icon: MessageSquare, href: "/social-post" },
-  //   ]
-  // }
 ];
 
 const Sidebar = () => {
@@ -65,7 +23,7 @@ const Sidebar = () => {
   return (
     <aside className="w-64 border-r bg-background h-screen fixed left-0 top-0 overflow-y-auto">
       <div className="p-6">
-        <h2 className="text-lg font-semibold mb-6">Demo Dob</h2>
+        <h2 className="text-lg font-semibold mb-6">Demo Dashboard</h2>
         <nav className="space-y-6">
           {navigationItems.map((section, index) => (
             <div key={index}>
