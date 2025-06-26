@@ -367,9 +367,9 @@ const BulkPayment = () => {
                           <TableCell>
                             <span
                               className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                                bulkPaymentId.status === "SUCCESS"
+                                bulkPaymentId.status === "APPROVED"
                                   ? "bg-green-50 text-green-700"
-                                  : bulkPaymentId.status === "FAILED"
+                                  : bulkPaymentId.status === "DENIED"
                                   ? "bg-red-50 text-red-700"
                                   : "bg-yellow-50 text-yellow-700"
                               }`}

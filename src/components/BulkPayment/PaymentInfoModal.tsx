@@ -26,6 +26,20 @@ const PaymentInfoModal = ({
   onClose: () => void;
   paymentInfoDetails?: PaymentInfoDetailsType[];
 }) => {
+
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case "COMPLETED":
+        return "bg-green-100 text-green-800";
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-800";
+      case "FAILED":
+      default:
+        return "bg-red-100 text-red-800";
+    }
+  };
+
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className={"sm:max-w-[70%] max-h-[80%]  overflow-y-auto"}>
@@ -42,6 +56,7 @@ const PaymentInfoModal = ({
                 <TableHead>TRANSACTION TYPE</TableHead>
                 <TableHead>STATUS</TableHead>
                 <TableHead>AMOUNT</TableHead>
+                <TableHead>CTRATED</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -64,15 +79,12 @@ const PaymentInfoModal = ({
                     <TableCell>{paymentInfo.beneficiaryCyrusId}</TableCell>
                     <TableCell>{paymentInfo.transactionType}</TableCell>
                     <TableCell>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs ${
-                          paymentInfo.status
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {paymentInfo.status ? "Active" : "Inactive"}
+                      <span className={`px-2 py-1 rounded-full text-xs ${getStatusStyle(paymentInfo.status)}`}>
+                        {paymentInfo.status}
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      {paymentInfo.amount}
                     </TableCell>
                     <TableCell>
                       {new Date(paymentInfo.createdAt).toLocaleDateString()}
